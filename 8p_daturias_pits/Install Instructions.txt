@@ -1,0 +1,5 @@
+Install the maps by copying all files into the following path:
+
+D:\Steam\steamapps\common\Dawn of War Soulstorm\DXP2\Data\Scenarios\mp
+
+If you dont have folders (like Scenarois or mp) on the following path just create them
