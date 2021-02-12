@@ -1,1 +1,1 @@
-{"Authors":"TranspersonalPsy","ModName":"Blood River [Rem] (2)","Description":"","WebPage":"","MapSize":"257","PlayersCount":2,"Tags":["default-map"]}
+{"Authors":"TranspersonalPsy","ModName":"Blood River [Rem] (2)","Description":"","WebPage":"","MapSize":"257","PlayersCount":2,"Tags":["default-map","blabla"]}
