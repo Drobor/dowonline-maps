@@ -1,0 +1,46 @@
+-------------------------------------------------
+--[[ IMPORTS ]]
+-------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+-------------------------------------------------
+--[[ GAME SETUP ]]
+-------------------------------------------------
+
+
+-------------------------------------------------
+--[[ ON INITIALIZATION ]]
+-------------------------------------------------
+
+function OnInit()
+	
+	--[[ START THE MUSIC ]]
+	-- call the function to load the jukebox with tunes]]
+	Rule_SetupMusicPlaylist()
+	
+end
+
+--[[ the Scar_AddInit(OnInit) function is mandatory! This registers your init function with scar. ]]
+Scar_AddInit(OnInit)
+	
+
+
+-------------------------------------------------
+--[[ MUSIC ]]
+-------------------------------------------------
+
+function Rule_SetupMusicPlaylist()
+
+	t_ambient = {"Rain_thunder_amb" }
+	
+--~ 	
+--~ 	
+--~ 		"Rain_thunder_amb",
+--~ 		"Snowy_wind_1",
+--~ 		"Snowy_wind_2",
+		
+		
+	Playlist_Manager( PC_Ambient, t_ambient, true , true , {5, 10})
+	
+end
