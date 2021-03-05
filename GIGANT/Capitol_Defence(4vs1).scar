@@ -1,0 +1,411 @@
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+--EZScar  The easy way to do scar programming
+--Version 2.019 Beta
+--Tim Young (programmer), Dre Reding (Lua reference), Philip Young (Idea Man/tester)
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+--For information on how to customize this for your own maps, read the doc
+--that comes with this.  Please keep that document along with all copies
+--of EZScar so anyone stumbling across maps can use EZScar also
+--
+--This script is messageware. You can freely copy, redistribute, change, and use this 
+--code, and are encouraged to do so.  If you reuse small portions of the code, please
+--mention you used EZScar as a reference.  If you reuse the majority of this code,
+--please keep this header and the "message" intact.  The original creators believe 
+--that all people should at least have one opportunity to know that God's Word gives 
+--direction to an abundant life, regardless of race, upbringing, age, education, 
+--or gender. And that there is hope for our lives regardless of the mess we have 
+--made of them.
+--If you are interested in discovering more about this message, here are two
+--websites you can check out:
+--  http://powertochange.com
+--  http://www.rbc.org/bible-study/answers-to-tough-questions/home.aspx
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+--All SCAR scripts need these for them to work:  Do not remove
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+--You can change this line to point to the latest EZScar-2-xxx.scar file
+import("EZScar-2-020B2.scar")
+
+------------------------------------------------------------------
+------- Make your edits here ----------------------------------
+------------------------------------------------------------------
+
+-- g_GameType: "invasion" or "onslaught" 
+g_GameType = "invasion"
+
+-- g_debug true/false  If set to true, the "enemy" bases will be owned by player 1.  Do this to test base building.
+g_debug = false
+
+-- g_DestroyHQ  True|False   If you destroy all the HQs in a base, does the base self-destruct?
+g_DestroyHQ = false
+
+--g_max_locations=#  The number of possible locations for the enemy to spawn at.
+--   There should be basic_markers for every location.  Read the "readme" file for information
+--   The markers should be like: 1-hq-1, 1-turret-1, 1-military-1, 1-minefield-1, 1-power-1
+--    Where the first number is the "location" and the second number is an incremantal count.
+--    12-turret-5 is the fifth turret at the location number 12
+g_max_locations=17
+
+--g_WaveDelay = an array of delay times before each wave.  If not enough times are given, the last time
+--listed will be used for all the remaining waves.
+g_WaveDelay= {
+	160, 20 
+}
+
+
+function localinit()
+	print("LOCALINIT-start")
+-- Turn off the FOW (for testing) 
+--	DoItNow({"FOW","off"})
+	local looper
+	DoItNow({"Grant","player1","resource",20000,"begining_resource_1"})
+--	DoItNow({"Grant","player2","resource",50000,"begining_resource_2"})
+	DoItNow ({"DeSpawn", "Capitol_Remains" })
+	DoItNow({"Grant","player3","resource",20000,"begining_resource_3"})
+	DoItNow({"Grant","player4","resource",20000,"begining_resource_4"})
+	DoItNow({"Grant","player5","resource",20000,"begining_resource_5"})	
+	CreateRule ({"Compare",{"var_start"}, "=", true}, {"Function", delay_before_difficulty})
+	CreateRule( {{"WaveIs","<", 5}, delay=1} , {"Teleport", {"players"}, "teleportsource16","teleportdest1" })
+	CreateRule( {{"WaveIs","<", 5}, delay=1} , {"Teleport", {"players"}, "teleportsource17","teleportdest8" })
+	CreateRule ({"Always"},{"FOW","off", "Reveal_Capitol"})
+	CreateRule( {"WaveIs","=", 4} , {"DeSpawn", "RoadBlock" })
+
+		CreateRule({"Always",  delay= 30 } ,{"Grant","player1", "ork",100})
+		DoItNow( {"Grant","player1", "scap",100})
+		DoItNow( {"Grant","player1", "vcap",50})	
+	
+		CreateRule({"Always",  delay= 30 } ,{"Grant","player3", "ork",100})
+		DoItNow( {"Grant","player3", "scap",100})
+		DoItNow( {"Grant","player3", "vcap",50})	
+
+		CreateRule({"Always",  delay= 30 } ,{"Grant","player4", "ork",100})
+		DoItNow( {"Grant","player4", "scap",100})
+		DoItNow( {"Grant","player4", "vcap",50})
+	
+		CreateRule({"Always",  delay= 30 } ,{"Grant","player5", "ork",100})
+		DoItNow( {"Grant","player5", "scap",100})
+		DoItNow( {"Grant","player5", "vcap",50})
+
+	if getval({"PlayerRace",0}) == "guard_race" then
+		print ("PlayerRace is guard_race")
+ 			DoItNow({"Squad","player1","Commander_1","guard_squad_command_squad","start_squad1"})
+
+	elseif  getval({"PlayerRace",0}) == "space_marine_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player1","Commander_1","space_marine_squad_force_commander","start_squad1"})
+
+	elseif  getval({"PlayerRace",0}) == "sisters_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player1","Commander_1","sisters_squad_canoness","start_squad1"})
+
+	elseif  getval({"PlayerRace",0}) == "tau_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player1","Commander_1","tau_commander_squad","start_squad1"})
+	end
+
+	if getval({"PlayerRace",2}) == "guard_race" then
+		print ("PlayerRace is guard_race")
+ 			DoItNow({"Squad","player3","Commander_3","guard_squad_command_squad","start_squad3"})
+
+	elseif  getval({"PlayerRace",2}) == "space_marine_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player3","Commander_3","space_marine_squad_force_commander","start_squad3"})
+
+	elseif  getval({"PlayerRace",2}) == "sisters_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player3","Commander_3","sisters_squad_canoness","start_squad3"})
+
+	elseif  getval({"PlayerRace",2}) == "tau_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player3","Commander_3","tau_commander_squad","start_squad3"})
+	end
+
+	if getval({"PlayerRace",3}) == "guard_race" then
+		print ("PlayerRace is guard_race")
+ 			DoItNow({"Squad","player4","Commander_4","guard_squad_command_squad","start_squad4"})
+
+	elseif  getval({"PlayerRace",3}) == "space_marine_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player4","Commander_4","space_marine_squad_force_commander","start_squad4"})
+
+	elseif  getval({"PlayerRace",3}) == "sisters_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player4","Commander_4","sisters_squad_canoness","start_squad4"})
+
+	elseif  getval({"PlayerRace",3}) == "tau_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player4","Commander_4","tau_commander_squad","start_squad4"})
+	end
+
+	if getval({"PlayerRace",4}) == "guard_race" then
+		print ("PlayerRace is guard_race")
+ 			DoItNow({"Squad","player5","Commander_5","guard_squad_command_squad","start_squad5"})
+
+	elseif  getval({"PlayerRace",4}) == "space_marine_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player5","Commander_5","space_marine_squad_force_commander","start_squad5"})
+
+	elseif  getval({"PlayerRace",4}) == "sisters_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player5","Commander_5","sisters_squad_canoness","start_squad5"})
+
+	elseif  getval({"PlayerRace",4}) == "tau_race" then
+		print ("PlayerRace is space_marine_race")
+ 			DoItNow({"Squad","player5","Commander_5","tau_commander_squad","start_squad5"})
+	end
+
+
+
+
+
+	CreateRule( {"SgroupDestroyed","Old_Man"}, {{"DeSpawn", "Capitol_Upper_Walls"}, {"ReSpawn", "Capitol_Remains"  }})
+
+	DoItNow ({Sound_Play( "Capitol_Defense_Intro" )})
+
+end
+
+
+
+function recompute_difficulty_level()
+ local difficulty=getval({"Difficulty"})
+ if difficulty == nil or difficulty == "unknown" then difficulty = "standard" end
+ g_GamePlay = alternate_wave[ difficulty ]
+ local looper=0
+ local base=0
+
+	--We do -1 because there is one bad-guy
+	local num_players=World_GetPlayerCount() -1
+	local orig_value=0
+	--g_MapConfiguredFor
+	if g_AutoRecompute==true then
+		for looper=1,(table.getn(g_GamePlay)/8) do
+			base=(looper*8) -7
+			if g_GamePlay[base + 1] == "default" and Player_GetRaceName( g_Player2 ) == "ork_race" then
+				--adjust for the difference in ork-cap from ordinary cap - I used to * 20, but too much
+				g_GamePlay[base + 5] = g_GamePlay[base + 5] * 2
+			end
+			--Adjust in direct percentage.   Determine how many badguys per player and multiply
+			--by the number of players actually in the game
+			orig_value=g_GamePlay[base + 5]
+			g_GamePlay[base + 5] = (g_GamePlay[base + 5] / g_MapConfiguredFor) * num_players
+			if g_GamePlay[base + 5] < 10 and orig_value > 0 then 
+				g_GamePlay[base + 5] = 10
+			end
+			orig_value=g_GamePlay[base + 6]
+			g_GamePlay[base + 6] = (g_GamePlay[base + 6] / g_MapConfiguredFor) * num_players
+			if g_GamePlay[base + 6] < 3 and orig_value > 0 then
+				g_GamePlay[base + 6] = 3
+			end
+		end
+	end
+
+end
+
+
+
+function delay_before_difficulty()
+	if g_wait == nil then
+		g_wait = 0
+	end
+	
+
+	if g_wait == 8 then
+		DoItNow({"Function", recompute_difficulty_level})
+		DoItNow({"Set","var_start",false})
+	end
+	 g_wait = g_wait + 1
+end
+
+
+
+g_GamePlay = {
+-- #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer	
+	1, "default",       "7",	"trickle",		1, 	10,		5,	8,
+	1, "default",       "1",	"trickle",		1, 	10,		5,	8,
+	2, "default",		"3", 	"wave-trickle",		1, 	10, 	5,	8,
+	2, "default",		"5",	"wave-trickle",		1, 	10, 	5,	8,
+	2, "default",       "15",	"wave-trickle",		1, 	10, 	5,	8,
+	2, "default",		"4", 	"wave-trickle",		1, 	10, 	5,	8,
+	2, "default",		"6", 	"wave-trickle",		1,  10, 	5,	8,
+	2, "default",       "2",	"wave-trickle",		1, 	10,		5,	8,
+	3, "default",       "13",	"wave-trickle",		2, 	10,		5,	8,
+	3, "default",       "11",	"wave-trickle",		2, 	10,		5,	8,
+	3, "default",		"9", 	"wave-trickle",		2, 	10, 	5,	8,
+	3, "default",		"10",	"wave-trickle",		2, 	10, 	5,	8,
+	3, "default",       "8",	"wave-trickle",		2, 	10, 	5,	8,
+	3, "default",		"12", 	"wave-trickle",		2, 	10, 	5,	8,
+	3, "default",		"14", 	"wave-trickle",		2,  10, 	5,	8,
+	4, "default",		"16", 	"wave-trickle",		3,  20, 	10,	8,
+	4, "default",		"17", 	"wave-trickle",		3,  20, 	10,	8,
+}
+
+alternate_wave={ 
+	easy=  {
+--     #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer
+	1, "default",       "7",	"trickle",		1, 	10,		5,	8,
+	1, "default",       "1",	"trickle",		1, 	10,		5,	8,
+	2, "default",		"3", 	"wave-trickle",		1, 	10, 	5,	8,
+	2, "default",		"5",	"wave-trickle",		1, 	10, 	5,	8,
+	2, "default",       "15",	"wave-trickle",		1, 	12, 	6,	8,
+	2, "default",		"4", 	"wave-trickle",		1, 	12, 	6,	8,
+	2, "default",		"6", 	"wave-trickle",		1,  12, 	6,	8,
+	2, "default",       "2",	"wave-trickle",		1, 	12,		6,	8,
+	3, "default",       "13",	"wave-trickle",		1, 	15,		7,	8,
+	3, "default",       "11",	"wave-trickle",		1, 	15,		7,	8,
+	3, "default",		"9", 	"wave-trickle",		1, 	15, 	7,	8,
+	3, "default",		"10",	"wave-trickle",		1, 	15, 	7,	8,
+	3, "default",       "8",	"wave-trickle",		1, 	15, 	7,	8,
+	3, "default",		"12", 	"wave-trickle",		1, 	15, 	7,	8,
+	3, "default",		"14", 	"wave-trickle",		1,  15, 	7,	8,
+	4, "default",		"16", 	"wave-trickle",		2,  20, 	10,	8,
+	4, "default",		"17", 	"wave-trickle",		2,  20, 	10,	8,
+--     3, "custom2",  		"2",      "wave-trickle",		1, 	5,	10,	1,	 
+},
+	standard =   {
+--     #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer
+	1, "default",       "7",	"trickle",		1, 	11,		6,	7,
+	1, "default",       "1",	"trickle",		1, 	11,		6,	7,
+	2, "default",		"3", 	"wave-trickle",		1, 	11, 	6,	7,
+	2, "default",		"5",	"wave-trickle",		1, 	11, 	6,	7,
+	2, "default",       "15",	"wave-trickle",		1, 	15, 	7,	7,
+	2, "default",		"4", 	"wave-trickle",		1, 	15, 	7,	7,
+	2, "default",		"6", 	"wave-trickle",		1,  15, 	7,	7,
+	2, "default",       "2",	"wave-trickle",		1, 	15,		7,	7,
+	3, "default",       "13",	"wave-trickle",		2, 	10,		5,	7,
+	3, "default",       "11",	"wave-trickle",		2, 	10,		5,	7,
+	3, "default",		"9", 	"wave-trickle",		2, 	10, 	5,	7,
+	3, "default",		"10",	"wave-trickle",		2, 	10, 	5,	7,
+	3, "default",       "8",	"wave-trickle",		2, 	10, 	5,	7,
+	3, "default",		"12", 	"wave-trickle",		2, 	10, 	5,	7,
+	3, "default",		"14", 	"wave-trickle",		2,  10, 	5,	7,
+	4, "default",		"16", 	"wave-trickle",		3,  20, 	10,	7,
+	4, "default",		"17", 	"wave-trickle",		3,  20, 	10,	7,
+--     3, "custom2",  		"2",      "wave-trickle",		1, 	5,	10,	1,	 
+},
+	hard =   {
+--     #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer
+	1, "default",       "7",	"trickle",		2, 	8,		4,	7,
+	1, "default",       "1",	"trickle",		2, 	8,		4,	7,
+	2, "default",		"3", 	"wave-trickle",		2, 	8,	 	4,	7,
+	2, "default",		"5",	"wave-trickle",		2, 	8,		4,	7,
+	2, "default",       "15",	"wave-trickle",		2, 	9,	 	5,	6,
+	2, "default",		"4", 	"wave-trickle",		2, 	9,		5,	6,
+	2, "default",		"6", 	"wave-trickle",		2,  9,		5,	6,
+	2, "default",       "2",	"wave-trickle",		2, 	9,		5,	6,
+	3, "default",       "13",	"wave-trickle",		2, 	12,		8,	6,
+	3, "default",       "11",	"wave-trickle",		2, 	12,		8,	6,
+	3, "default",		"9", 	"wave-trickle",		2, 	12, 	8,	6,
+	3, "default",		"10",	"wave-trickle",		2, 	12, 	8,	6,
+	3, "default",       "8",	"wave-trickle",		2, 	12, 	8,	6,
+	3, "default",		"12", 	"wave-trickle",		2, 	12, 	8,	6,
+	3, "default",		"14", 	"wave-trickle",		2,  12, 	8,	6,
+	4, "default",		"16", 	"wave-trickle",		3,  35, 	20,	6,
+	4, "default",		"17", 	"wave-trickle",		3,  35, 	20,	6,
+--     3, "custom2",  		"2",      "wave-trickle",		1, 	5,	10,	1,	 
+},
+	harder =  {
+--     #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer
+	1, "default",       "7",	"trickle",		2, 	15,		6,	6,
+	1, "default",       "1",	"trickle",		2, 	15,		6,	6,
+	2, "default",		"3", 	"wave-trickle",		2, 	15,	 	6,	6,
+	2, "default",		"5",	"wave-trickle",		2, 	15,		6,	6,
+	2, "default",       "15",	"wave-trickle",		2, 	16,	 	8,	5,
+	2, "default",		"4", 	"wave-trickle",		2, 	16,		8,	5,
+	2, "default",		"6", 	"wave-trickle",		2,  16,		8,	5,
+	2, "default",       "2",	"wave-trickle",		2, 	16,		8,	5,
+	3, "default",       "13",	"wave-trickle",		2, 	20,		10,	5,
+	3, "default",       "11",	"wave-trickle",		2, 	20,		10,	5,
+	3, "default",		"9", 	"wave-trickle",		2, 	20, 	10,	5,
+	3, "default",		"10",	"wave-trickle",		2, 	20, 	10,	5,
+	3, "default",       "8",	"wave-trickle",		2, 	20, 	10,	5,
+	3, "default",		"12", 	"wave-trickle",		2, 	20, 	10,	5,
+	3, "default",		"14", 	"wave-trickle",		2,  20, 	10,	5,
+	4, "default",		"16", 	"wave-trickle",		3,  55, 	30,	5,
+	4, "default",		"17", 	"wave-trickle",		3,  55, 	30,	5,
+--     3, "custom2",  		"2",      "wave-trickle",		1, 	5,	10,	1,	 
+},
+	insane =  {
+--     #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer
+	1, "default",       "7",	"trickle",		2, 	20,		8,	6,
+	1, "default",       "1",	"trickle",		2, 	20,		8,	6,
+	2, "default",		"3", 	"wave-trickle",		3, 	10,	 	6,	6,
+	2, "default",		"5",	"wave-trickle",		2, 	20,		8,	6,
+	2, "default",       "15",	"wave-trickle",		3, 	16,	 	8,	5,
+	2, "default",		"4", 	"wave-trickle",		2, 	26,		15,	5,
+	2, "default",		"6", 	"wave-trickle",		3,  16,		8,	5,
+	2, "default",       "2",	"wave-trickle",		2, 	26,		15,	5,
+	3, "default",       "13",	"wave-trickle",		3, 	20,		10,	5,
+	3, "default",       "11",	"wave-trickle",		2, 	20,		10,	5,
+	3, "default",		"9", 	"wave-trickle",		3, 	20, 	10,	5,
+	3, "default",		"10",	"wave-trickle",		2, 	20, 	10,	5,
+	3, "default",       "8",	"wave-trickle",		3, 	20, 	10,	5,
+	3, "default",		"12", 	"wave-trickle",		2, 	20, 	10,	5,
+	3, "default",		"14", 	"wave-trickle",		3,  20, 	10,	5,
+	4, "default",		"16", 	"wave-trickle",		3,  80, 	45,	2,
+	4, "default",		"17", 	"wave-trickle",		3,  80, 	45,	2,
+--     3, "custom2",  		"2",      "wave-trickle",		1, 	5,	10,	1,	 
+}}
+
+
+
+
+--g_WaveActions
+
+
+
+
+
+g_WaveActions2 = {
+--g_WaveActions="before|during|not", "wave#", "teleport|destroy|building|squad|squad-once", "enemy|player", "marker", "blueprint|dest-marker", timer
+	"before",1,"teleport","player","teleportsource1","teleportdest1",0,
+	"before",1,"teleport","player","teleportsource2","teleportdest1",0,
+	"before",1,"teleport","player","teleportsource3","teleportdest2",0,
+	"before",1,"teleport","player","teleportsource4","teleportdest2",0,
+	"before",1,"teleport","player","teleportsource5","teleportdest3",0,
+	"before",1,"teleport","player","teleportsource6","teleportdest3",0,
+	"before",1,"teleport","player","teleportsource7","teleportdest4",0,
+	"before",1,"teleport","player","teleportsource8","teleportdest4",0,
+	"before",1,"teleport","player","teleportsource9","teleportdest5",0,
+	"before",1,"teleport","player","teleportsource10","teleportdest5",0,
+	"before",1,"teleport","player","teleportsource11","teleportdest6",0,
+	"before",1,"teleport","player","teleportsource12","teleportdest6",0,
+	"before",1,"teleport","player","teleportsource13","teleportdest7",0,
+	"before",1,"teleport","player","teleportsource14","teleportdest7",0,
+	"before",1,"teleport","player","teleportsource15","teleportdest8",0,
+	"before",1,"teleport","player","teleportsource16","teleportdest8",0,
+	"during",1,"teleport","player","teleportsource2","teleportdest1",0,
+	"during",1,"teleport","player","teleportsource4","teleportdest2",0,
+	"during",1,"teleport","player","teleportsource6","teleportdest3",0,
+	"during",1,"teleport","player","teleportsource8","teleportdest4",0,
+	"during",1,"teleport","player","teleportsource10","teleportdest5",0,
+	"during",1,"teleport","player","teleportsource12","teleportdest6",0,
+	"during",1,"teleport","player","teleportsource14","teleportdest7",0,
+	"before",2,"teleport","player","teleportsource2","teleportdest1",0,
+	"before",2,"teleport","player","teleportsource4","teleportdest2",0,
+	"before",2,"teleport","player","teleportsource6","teleportdest3",0,
+	"before",2,"teleport","player","teleportsource8","teleportdest4",0,
+	"before",2,"teleport","player","teleportsource10","teleportdest5",0,
+	"before",2,"teleport","player","teleportsource12","teleportdest6",0,
+	"before",2,"teleport","player","teleportsource14","teleportdest7",0,
+	"before",2,"teleport","player","teleportsource15","teleportdest8",0,
+	"during",2,"teleport","player","teleportsource2","teleportdest1",0,
+	"during",2,"teleport","player","teleportsource4","teleportdest2",0,
+	"during",2,"teleport","player","teleportsource6","teleportdest3",0,
+	"during",2,"teleport","player","teleportsource8","teleportdest4",0,
+	"during",2,"teleport","player","teleportsource10","teleportdest5",0,
+	"during",2,"teleport","player","teleportsource12","teleportdest6",0,
+	"during",2,"teleport","player","teleportsource14","teleportdest7",0,
+	"before",3,"teleport","player","teleportsource2","teleportdest1",0,
+	"before",3,"teleport","player","teleportsource4","teleportdest2",0,
+	"before",3,"teleport","player","teleportsource6","teleportdest3",0,
+	"before",3,"teleport","player","teleportsource8","teleportdest4",0,
+	"before",3,"teleport","player","teleportsource10","teleportdest5",0,
+	"before",3,"teleport","player","teleportsource12","teleportdest6",0,
+	"before",3,"teleport","player","teleportsource14","teleportdest7",0,
+	"not",4,"teleport","player","teleportsource16","teleportdest8",0,
+	"not",4,"teleport","enemy","teleportenemy","teleportsource1",0
+}
+

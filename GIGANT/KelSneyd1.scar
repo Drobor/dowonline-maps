@@ -1,0 +1,1314 @@
+--------------------------------------------------------------------------------------------
+-------------------------------Battle For KelSneyd III--------------------------------------
+------------------------------------Mission I-----------------------------------------------
+-----------------------------created by Britzrules [2009]-----------------------------------
+--------------------------------------------------------------------------------------------
+
+--This is a survival style map, feel free to use it as a template for your own
+--Just give credit where its due
+
+-------------------------------------------------
+--[[ IMPORTS ]]
+-------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+
+-----------------------------------------------
+
+-------------------------------------------------
+--[[ON GAME SETUP]]
+-------------------------------------------------
+function OnGameSetup()
+    if Annihilate~=nil then 
+        if Scar_InitExists(Annihilate) then
+            print("OnGameSetup => killing annihilate wincondition")
+            Scar_RemoveInit(Annihilate)
+        end
+    end
+end
+g_Player1 = World_GetPlayerAt(0)
+g_Player2 = World_GetPlayerAt(1)
+g_Player3 = World_GetPlayerAt(2)
+g_Player4 = World_GetPlayerAt(2)
+g_PosDropPodWest = World_Pos( -89, 4.75, -72 )
+g_PosDropPodCenterWest = World_Pos( -55, 4.082, -75 )
+g_PosDropPodCenter = World_Pos( -5, 4.5, -69 )
+g_PosDropPodCenterEast = World_Pos( 50, 4.75, -80 )
+g_PosDropPodEast = World_Pos( 113, 4.5, -70 )
+g_PosTeleportWest = World_Pos( -111, 8, -46 )
+g_PosTeleportCenterWest = World_Pos( -20, 10, -37 )
+g_PosTeleportCenterEast = World_Pos( 52, 10, -1 )
+g_PosTeleportEast = World_Pos( 118, 10, -47 )
+g_WEST_Prox1 = false
+g_WEST_Prox2 = false
+g_WEST_Prox3 = false
+g_WEST_Prox4 = false
+g_CENTER_Prox1 = false
+g_CENTER_Prox2 = false
+g_CENTER_Prox3 = false
+g_CENTER_Prox4 = false
+g_EAST_Prox1 = false
+g_EAST_Prox2 = false
+g_EAST_Prox3 = false
+g_EAST_Prox4 = false
+g_DropWest_Prox1 = false
+g_DropWest_Prox2 = false
+g_DropWest_Prox3 = false
+g_DropWest_Prox4 = false
+g_ReinforcementsFalse1_Prox1 = false
+g_ReinforcementsFalse1_Prox2 = false
+g_ReinforcementsFalse1_Prox3 = false
+g_ReinforcementsFalse1_Prox4 = false
+g_ReinforcementsFalse2_Prox1 = false
+g_ReinforcementsFalse2_Prox2 = false
+g_ReinforcementsFalse2_Prox3 = false
+g_ReinforcementsFalse2_Prox4 = false
+g_ReinforcementsFalse3_Prox1 = false
+g_ReinforcementsFalse3_Prox2 = false
+g_ReinforcementsFalse3_Prox3 = false
+g_ReinforcementsFalse3_Prox4 = false
+g_DropCenter_Prox1 = false
+g_DropCenter_Prox2 = false
+g_DropCenter_Prox3 = false
+g_DropCenter_Prox4 = false
+g_DropWest1_Prox1 = false
+g_DropWest1_Prox2 = false
+g_DropWest1_Prox3 = false
+g_DropWest1_Prox4 = false
+g_DropCenter1_Prox1 = false
+g_DropCenter1_Prox2 = false
+g_DropCenter1_Prox3 = false
+g_DropCenter1_Prox4 = false
+g_DropCenter2_Prox1 = false
+g_DropCenter2_Prox2 = false
+g_DropCenter2_Prox3 = false
+g_DropCenter2_Prox4 = false
+g_DropEast1_Prox1 = false
+g_DropEast1_Prox2 = false
+g_DropEast1_Prox3 = false
+g_DropEast1_Prox4 = false
+--Set up the teams
+-----------------------------------------------------------------------
+	g_Player1 = Setup_Player (0, "Central Defense Force","Guard_race",1)
+	Misc_PlayerTeamColor(g_Player1,"default_7")	
+	g_Player2 = Setup_Player (1,"Western Defence Force", "Guard_race",1)
+	Misc_PlayerTeamColor(g_Player2,"default_1")
+	g_Player3 = Setup_Player (2,"Eastern Defence Force", "Guard_race",1)
+	Misc_PlayerTeamColor(g_Player3,"default_6")
+	g_Player4 = Setup_Player (3,"Rebels", "chaos_marine_race",2)
+	Misc_PlayerTeamColor(g_Player4,"default_4")
+
+-- Variables are;- (player slot number, Team name(Text string), team )
+
+
+-------------------------------------------------
+--[[ ON INITIALIZATION ]]
+-------------------------------------------------
+
+function OnInit()
+	Player_DestroyAll( g_Player4, true, true, true )
+	Util_MissionTitle( "Battle for KelSneyd III: Mission I" )
+	Player_RestrictSquad( g_Player1, "guard_squad_kasrkin" )
+	Player_RestrictSquad( g_Player2, "guard_squad_kasrkin" )
+	Player_RestrictSquad( g_Player3, "guard_squad_kasrkin" )
+	Player_RestrictSquad( g_Player1, "guard_squad_psyker" )
+	Player_RestrictSquad( g_Player2, "guard_squad_psyker" )
+	Player_RestrictSquad( g_Player3, "guard_squad_psyker" )
+	Player_RestrictSquad( g_Player1, "guard_squad_baneblade" )
+	Player_RestrictSquad( g_Player2, "guard_squad_baneblade" )
+	Player_RestrictSquad( g_Player3, "guard_squad_baneblade" )
+	Player_RestrictSquad( g_Player1, "guard_squad_assassin" )
+	Player_RestrictSquad( g_Player2, "guard_squad_assassin" )
+	Player_RestrictSquad( g_Player3, "guard_squad_assassin" )
+	Player_RestrictSquad( g_Player1, "guard_squad_lemanruss" )
+	Player_RestrictSquad( g_Player2, "guard_squad_lemanruss" )
+	Player_RestrictSquad( g_Player3, "guard_squad_lemanruss" )
+	Player_RestrictAbility( g_Player1, "guard_strafing_run" )
+	Player_RestrictAbility( g_Player2, "guard_strafing_run" )
+	Player_RestrictAbility( g_Player3, "guard_strafing_run" )
+	Player_RestrictAbility( g_Player1, "earthshaker_round" )
+	Player_RestrictAbility( g_Player2, "earthshaker_round" )
+	Player_RestrictAbility( g_Player3, "earthshaker_round" )
+	Player_RestrictResearch( g_Player1, "guard_enable_strafing_run")
+	Player_RestrictResearch( g_Player2, "guard_enable_strafing_run")
+	Player_RestrictResearch( g_Player3, "guard_enable_strafing_run")
+	Player_RestrictResearch( g_Player1, "guard_full_scale_war")
+	Player_RestrictResearch( g_Player2, "guard_full_scale_war")
+	Player_RestrictResearch( g_Player3, "guard_full_scale_war")
+	Player_RestrictResearch( g_Player1, "guard_research_assassin_infiltrate")
+	Player_RestrictResearch( g_Player2, "guard_research_assassin_infiltrate")
+	Player_RestrictResearch( g_Player3, "guard_research_assassin_infiltrate")
+	Player_RestrictResearch( g_Player1, "guard_research_kasrkin_armor")
+	Player_RestrictResearch( g_Player2, "guard_research_kasrkin_armor")
+	Player_RestrictResearch( g_Player3, "guard_research_kasrkin_armor")
+	Player_RestrictResearch( g_Player1, "guard_research_kasrkin_speed")
+	Player_RestrictResearch( g_Player2, "guard_research_kasrkin_speed")
+	Player_RestrictResearch( g_Player3, "guard_research_kasrkin_speed")
+	Player_GrantResearch(g_Player1, "guard_guardsman_morale")
+	Player_GrantResearch(g_Player1, "guard_upgrade_guardsmen_health")
+	Player_GrantResearch(g_Player1, "guard_research_command_squad_size")
+	Player_GrantResearch(g_Player2, "guard_guardsman_morale")
+	Player_GrantResearch(g_Player2, "guard_upgrade_guardsmen_health")
+	Player_GrantResearch(g_Player2, "guard_research_command_squad_size")
+	Player_GrantResearch(g_Player3, "guard_guardsman_morale")
+	Player_GrantResearch(g_Player3, "guard_upgrade_guardsmen_health")
+	Player_GrantResearch(g_Player3, "guard_research_command_squad_size")
+	Rule_AddInterval( CheckLose, 1 )
+	Rule_AddOneShot( BeginAssault, 5 )
+	Rule_AddInterval( idlewest, 5)
+	Rule_AddInterval( idlecenter, 5)
+	Rule_AddInterval( idleeast, 5)
+	SGroup_Create( "WEST" )
+	SGroup_Create( "CENTER" )
+	SGroup_Create( "EAST" )
+	SGroup_Create( "WestDrop" )
+	SGroup_Create( "CenterWestWestDrop" )
+	SGroup_Create( "CenterWestDrop" )
+	SGroup_Create( "CenterDrop" )
+	SGroup_Create( "CenterEastDrop" )
+	SGroup_Create( "CenterEastEastDrop" )
+	SGroup_Create( "EastDrop" )
+	SGroup_Create( "SGInfiltratorCenterWest")
+	SGroup_Create( "SGInfiltratorWest")
+	SGroup_Create( "SGInfiltratorCenterEast")
+	SGroup_Create( "SGInfiltratorEast")
+	SGroup_Create( "sg_OblitWest")
+	SGroup_Create( "sg_OblitCenterWest")
+	SGroup_Create( "sg_OblitCenterCenterWest")
+	SGroup_Create( "sg_OblitCenterCenterEast")
+	SGroup_Create( "sg_OblitCenter")
+	SGroup_Create( "sg_OblitEast")
+	SGroup_Create( "sg_OblitCenterEast")
+	Player_SetResource( g_Player1, RT_Requisition, 1500 )
+	Player_SetResource( g_Player2, RT_Requisition, 1500 )
+	Player_SetResource( g_Player3, RT_Requisition, 1500 )
+	Player_SetResource( g_Player1, RT_Power, 500 ) 
+	Player_SetResource( g_Player2, RT_Power, 500 ) 
+	Player_SetResource( g_Player3, RT_Power, 500 ) 
+	Player_SetResource( g_Player4, RT_Requisition, 99999 ) 
+	Player_SetResource( g_Player4, RT_Power, 99999 ) 
+	EGroup_DeSpawn( "EGPOINTS" )
+	SGroup_AddLeaders("sg_Guardsmen")
+end
+
+
+
+-- register init function
+Scar_AddInit( OnInit )
+
+-------------------------------------------------------------------------------
+----------------------------[[prevent idle western attacks]]-------------------
+-------------------------------------------------------------------------------
+
+function idlewest()
+
+	g_WEST_Prox1 = false
+	g_WEST_Prox2 = false
+	g_WEST_Prox3 = false
+	g_WEST_Prox4 = false
+
+	if Prox_AnySquadNearMarker("WEST", "idlewest") and SGroup_CheckActiveCommand("WEST", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("WEST","Attackwest")
+
+	elseif Prox_AnySquadNearMarker("WEST", "westdead") and SGroup_CheckActiveCommand("WEST", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("WEST","Attackcenter")
+
+	elseif Prox_AnySquadNearMarker("WEST", "centerdead") and SGroup_CheckActiveCommand("WEST", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("WEST","Attackeast")
+
+	end
+end
+
+
+
+function IdleDropWest()
+
+	g_DropWest_Prox1 = false
+	g_DropWest_Prox2 = false
+	g_DropWest_Prox3 = false
+	g_DropWest_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropWest", "idlewest") and SGroup_CheckActiveCommand("DropWest", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropWest","Attackwest")
+
+	elseif Prox_AnySquadNearMarker("DropWest", "westdead") and SGroup_CheckActiveCommand("DropWest", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropWest","Attackcenter")
+
+	elseif Prox_AnySquadNearMarker("DropWest", "centerdead") and SGroup_CheckActiveCommand("DropWest", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropWest","Attackeast")
+
+	end
+end
+
+function IdleDropWest1()
+
+	g_DropWest1_Prox1 = false
+	g_DropWest1_Prox2 = false
+	g_DropWest1_Prox3 = false
+	g_DropWest1_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropWest1", "idlewest") and SGroup_CheckActiveCommand("DropWest1", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropWest1","Attackwest")
+
+	elseif Prox_AnySquadNearMarker("DropWest1", "westdead") and SGroup_CheckActiveCommand("DropWest1", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropWest1","Attackcenter")
+
+	elseif Prox_AnySquadNearMarker("DropWest1", "centerdead") and SGroup_CheckActiveCommand("DropWest1", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropWest1","Attackeast")
+
+	end
+end
+
+function IdleReinforcementsWest()
+	g_ReinforcementsFalse1_Prox1 = false
+	g_ReinforcementsFalse1_Prox2 = false
+	g_ReinforcementsFalse1_Prox3 = false
+	g_ReinforcementsFalse1_Prox4 = false
+
+	if Prox_AnySquadNearMarker("ReinforcementsFalse1", "idlewest") and SGroup_CheckActiveCommand("WEST", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("ReinforcementsFalse1","Attackwest")
+
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse1", "westdead") and SGroup_CheckActiveCommand("WEST", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("ReinforcementsFalse1","Attackcenter")
+
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse1", "centerdead") and SGroup_CheckActiveCommand("WEST", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("ReinforcementsFalse1","Attackeast")
+
+	end
+end
+-------------------------------------------------------------------------------
+----------------------------[[prevent idle center]]----------------------------
+-------------------------------------------------------------------------------
+
+function idlecenter()
+
+	g_CENTER_Prox1 = false
+	g_CENTER_Prox2 = false
+	g_CENTER_Prox3 = false
+	g_CENTER_Prox4 = false
+
+	if Prox_AnySquadNearMarker("CENTER", "idlecenter") and SGroup_CheckActiveCommand("CENTER", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("CENTER","Attackcenter")
+	elseif Prox_AnySquadNearMarker("CENTER", "centerdead") and SGroup_CheckActiveCommand("CENTER", SQUADSTATEID_Idle, false) then
+	
+	local rand1 = World_GetRand(1,2)
+
+		if rand1 == 1 then
+				Cmd_AttackMoveMarker("CENTER","Attackeast")
+		elseif rand1 == 2 then
+				Cmd_AttackMoveMarker("CENTER","Attackwest")
+		end
+	elseif Prox_AnySquadNearMarker("CENTER", "eastdead") and SGroup_CheckActiveCommand("CENTER", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("CENTER","Attackwest")
+	elseif Prox_AnySquadNearMarker("CENTER", "westdead") and SGroup_CheckActiveCommand("CENTER", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("CENTER","Attackeast")
+	end
+end
+
+function IdleDropCenter()
+
+	g_DropCenter_Prox1 = false
+	g_DropCenter_Prox2 = false
+	g_DropCenter_Prox3 = false
+	g_DropCenter_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropCenter", "idlecenter") and SGroup_CheckActiveCommand("DropCenter", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropCenter","Attackcenter")
+	elseif Prox_AnySquadNearMarker("DropCenter", "centerdead") and SGroup_CheckActiveCommand("DropCenter", SQUADSTATEID_Idle, false) then
+	
+	local rand1 = World_GetRand(1,2)
+
+		if rand1 == 1 then
+				Cmd_AttackMoveMarker("DropCenter","Attackeast")
+		elseif rand1 == 2 then
+				Cmd_AttackMoveMarker("DropCenter","Attackwest")
+		end
+	elseif Prox_AnySquadNearMarker("DropCenter", "eastdead") and SGroup_CheckActiveCommand("DropCenter", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropCenter","Attackwest")
+	elseif Prox_AnySquadNearMarker("DropCenter", "westdead") and SGroup_CheckActiveCommand("DropCenter", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropCenter","Attackeast")
+	end
+end
+
+function IdleDropCenter1()
+
+	g_DropCenter1_Prox1 = false
+	g_DropCenter1_Prox2 = false
+	g_DropCenter1_Prox3 = false
+	g_DropCenter1_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropCenter1", "idlecenter") and SGroup_CheckActiveCommand("DropCenter1", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropCenter1","Attackcenter")
+	elseif Prox_AnySquadNearMarker("DropCenter1", "centerdead") and SGroup_CheckActiveCommand("DropCenter1", SQUADSTATEID_Idle, false) then
+	
+	local rand1 = World_GetRand(1,2)
+
+		if rand1 == 1 then
+				Cmd_AttackMoveMarker("DropCenter1","Attackeast")
+		elseif rand1 == 2 then
+				Cmd_AttackMoveMarker("DropCenter1","Attackwest")
+		end
+	elseif Prox_AnySquadNearMarker("DropCenter1", "eastdead") and SGroup_CheckActiveCommand("DropCenter1", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropCenter1","Attackwest")
+	elseif Prox_AnySquadNearMarker("DropCenter1", "westdead") and SGroup_CheckActiveCommand("DropCenter1", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropCenter1","Attackeast")
+	end
+end
+
+function IdleDropCenter2()
+
+	g_DropCenter2_Prox1 = false
+	g_DropCenter2_Prox2 = false
+	g_DropCenter2_Prox3 = false
+	g_DropCenter2_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropCenter2", "idlecenter") and SGroup_CheckActiveCommand("DropCenter2", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropCenter2","Attackcenter")
+	elseif Prox_AnySquadNearMarker("DropCenter2", "centerdead") and SGroup_CheckActiveCommand("DropCenter2", SQUADSTATEID_Idle, false) then
+	
+	local rand1 = World_GetRand(1,2)
+
+		if rand1 == 1 then
+				Cmd_AttackMoveMarker("DropCenter2","Attackeast")
+		elseif rand1 == 2 then
+				Cmd_AttackMoveMarker("DropCenter2","Attackwest")
+		end
+	elseif Prox_AnySquadNearMarker("DropCenter2", "eastdead") and SGroup_CheckActiveCommand("DropCenter2", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropCenter2","Attackwest")
+	elseif Prox_AnySquadNearMarker("DropCenter2", "westdead") and SGroup_CheckActiveCommand("DropCenter2", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("DropCenter2","Attackeast")
+	end
+end
+
+function IdleReinforcementsCenter()
+	g_ReinforcementsFalse2_Prox1 = false
+	g_ReinforcementsFalse2_Prox2 = false
+	g_ReinforcementsFalse2_Prox3 = false
+	g_ReinforcementsFalse2_Prox4 = false
+
+	if Prox_AnySquadNearMarker("ReinforcementsFalse2", "idlecenter") and SGroup_CheckActiveCommand("ReinforcementsFalse2", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("ReinforcementsFalse2","Attackcenter")
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse2", "centerdead") and SGroup_CheckActiveCommand("ReinforcementsFalse2", SQUADSTATEID_Idle, false) then
+	
+	local rand1 = World_GetRand(1,2)
+
+		if rand1 == 1 then
+				Cmd_AttackMoveMarker("ReinforcementsFalse2","Attackeast")
+		elseif rand1 == 2 then
+				Cmd_AttackMoveMarker("ReinforcementsFalse2","Attackwest")
+		end
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse2", "eastdead") and SGroup_CheckActiveCommand("ReinforcementsFalse2", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("ReinforcementsFalse2","Attackwest")
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse2", "westdead") and SGroup_CheckActiveCommand("ReinforcementsFalse2", SQUADSTATEID_Idle, false) then
+		Cmd_AttackMoveMarker("ReinforcementsFalse2","Attackeast")
+	end
+end
+-------------------------------------------------------------------------------
+----------------------------[[prevent idle east]]------------------------------
+-------------------------------------------------------------------------------
+
+function idleeast()
+
+	g_EAST_Prox1 = false
+	g_EAST_Prox2 = false
+	g_EAST_Prox3 = false
+	g_EAST_Prox4 = false
+
+	if Prox_AnySquadNearMarker("EAST", "idleeast") and SGroup_CheckActiveCommand("EAST", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("EAST","Attackeast")
+	elseif Prox_AnySquadNearMarker("EAST", "eastdead") and SGroup_CheckActiveCommand("EAST", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("EAST","Attackcenter")
+	elseif Prox_AnySquadNearMarker("EAST", "centerdead") and SGroup_CheckActiveCommand("EAST", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("EAST","Attackwest")
+
+	end
+end
+
+function IdleDropEast()
+
+	g_DropEast_Prox1 = false
+	g_DropEast_Prox2 = false
+	g_DropEast_Prox3 = false
+	g_DropEast_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropEast", "idleeast") and SGroup_CheckActiveCommand("DropEast", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropEast","Attackeast")
+	elseif Prox_AnySquadNearMarker("DropEast", "eastdead") and SGroup_CheckActiveCommand("DropEast", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropEast","Attackcenter")
+	elseif Prox_AnySquadNearMarker("DropEast", "centerdead") and SGroup_CheckActiveCommand("DropEast", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropEast","Attackwest")
+
+	end
+end
+
+function IdleDropEast1()
+
+	g_DropEast1_Prox1 = false
+	g_DropEast1_Prox2 = false
+	g_DropEast1_Prox3 = false
+	g_DropEast1_Prox4 = false
+
+	if Prox_AnySquadNearMarker("DropEast1", "idleeast") and SGroup_CheckActiveCommand("DropEast1", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropEast1","Attackeast")
+	elseif Prox_AnySquadNearMarker("DropEast1", "eastdead") and SGroup_CheckActiveCommand("DropEast1", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropEast1","Attackcenter")
+	elseif Prox_AnySquadNearMarker("DropEast1", "centerdead") and SGroup_CheckActiveCommand("DropEast1", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("DropEast1","Attackwest")
+
+	end
+end
+
+function IdleReinforcementsEast()
+	g_ReinforcementsFalse3_Prox1 = false
+	g_ReinforcementsFalse3_Prox2 = false
+	g_ReinforcementsFalse3_Prox3 = false
+	g_ReinforcementsFalse3_Prox4 = false
+
+	if Prox_AnySquadNearMarker("ReinforcementsFalse3", "idleeast") and SGroup_CheckActiveCommand("ReinforcementsFalse3", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("ReinforcementsFalse3","Attackeast")
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse3", "eastdead") and SGroup_CheckActiveCommand("ReinforcementsFalse3", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("ReinforcementsFalse3","Attackcenter")
+	elseif Prox_AnySquadNearMarker("ReinforcementsFalse3", "centerdead") and SGroup_CheckActiveCommand("EAST", SQUADSTATEID_Idle, false) then
+		
+		Cmd_AttackMoveMarker("ReinforcementsFalse3","Attackwest")
+
+	end
+end
+---------------------------------------------------------------------------------------------------
+--------------------------[[Begin Assault]]--------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+
+function BeginAssault()
+Actor_PlaySpeech(ACT.Mauser, 2635000)
+Rule_AddOneShot(Level1spawn, 20)
+Rule_AddOneShot(Level2spawn, 23)
+Rule_AddOneShot(Level3spawn, 26)
+end
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL1]]-----------------------------------------
+-------------------------------------------------------------------------------
+
+function Level1spawn() 
+Actor_PlaySpeech(ACT.Guardsman, 1001163)
+Actor_PlaySpeech(ACT.Guardsman, 2631020)
+Actor_PlaySpeech(ACT.Cultist, 2631120)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 8, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_cultist", "Spawngate2", 6, 8 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_ogryns", "Spawngate2", 1, 5 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_kasrkin", "Spawngate2", 1, 9 )
+Rule_AddOneShot(Level1attack, 5)
+end
+
+function Level1attack()
+
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )  
+Cmd_SetStance( "CENTER", STANCE_Attack ) 
+Rule_AddInterval(Checkifover, 5)
+end
+
+function Checkifover()
+
+if SGroup_IsEmpty( "CENTER" ) then
+SGroup_AddLeaders( "CENTER" )
+Rule_Remove(Checkifover)
+end 
+end
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL2]]-----------------------------------------
+-------------------------------------------------------------------------------
+function Level2spawn()
+
+Actor_PlaySpeech(ACT.Guardsman, 1012571)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_kasrkin", "Spawngate1", 1, 8 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_ogryns", "Spawngate1", 1, 5 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 8, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_cultist", "Spawngate1", 6, 8 )
+Rule_AddOneShot(Level2attack, 5)
+end
+
+function Level2attack()
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_SetStance( "WEST", STANCE_Attack )  
+Rule_AddInterval(Checkifover2, 5)
+end
+
+function Checkifover2()
+
+if SGroup_IsEmpty( "WEST" ) then
+SGroup_AddLeaders( "WEST" )
+Rule_Remove(Checkifover2)
+end 
+end
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL3]]-----------------------------------------
+-------------------------------------------------------------------------------
+function Level3spawn() 
+Actor_PlaySpeech(ACT.Guardsman, 1002203)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 8, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_kasrkin", "Spawngate3", 1, 9 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_ogryns", "Spawngate3", 1, 5 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_cultist", "Spawngate3", 6, 8 )
+Rule_AddOneShot(Level3attack, 5)
+end
+
+function Level3attack()
+
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_SetStance( "EAST", STANCE_Attack ) 
+Rule_AddInterval(Checkifover3, 5)
+end
+
+function Checkifover3()
+
+if SGroup_IsEmpty( "EAST" ) and SGroup_IsEmpty( "CENTER" ) and SGroup_IsEmpty( "WEST" ) then
+
+Actor_PlaySpeech(ACT.Guardsman, 1002190)
+SGroup_AddLeaders( "EAST" )
+Rule_AddOneShot( Level4spawn, 30 )
+Rule_AddOneShot( Level5spawn, 70 )
+Rule_Remove(Checkifover3)
+end 
+end
+
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL4]]-----------------------------------------
+-------------------------------------------------------------------------------
+function Level4spawn()
+
+Actor_PlaySpeech(ACT.Guardsman, 1012571)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 6, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_lemanruss", "Spawngate3", 1, 1 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_cultist", "Spawngate3", 4, 8 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_kasrkin", "Spawngate1", 2, 10 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_ogryns", "Spawngate1", 2, 5 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_khorne_berserker", "Spawngate1", 2, 8 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_cultist", "Spawngate1", 4, 8 )
+Rule_AddOneShot(Level4attack, 5)
+end
+
+function Level4attack()
+
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_SetStance( "EAST", STANCE_Attack ) 
+Cmd_SetStance( "WEST", STANCE_Attack )
+Rule_AddInterval(Checkifover4, 5)
+end
+
+function Checkifover4()
+if SGroup_Count( "EAST" )<3 and SGroup_Count( "WEST" )<3 then
+Util_MissionTitle("Commander, fleet command says they are sending another push at the center")
+Rule_AddOneShot( Level6spawn, 20 )
+Rule_Remove(Checkifover4)
+end 
+end
+
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL5]]-----------------------------------------
+-------------------------------------------------------------------------------
+
+function Level5spawn()
+
+Actor_PlaySpeech(ACT.Guardsman, 1001133)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_bloodthirster", "Spawngate2", 2, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_khorne_berserker", "Spawngate2", 2, 8 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 4, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_kasrkin", "Spawngate2", 2, 9 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_cultist", "Spawngate2", 2, 8 )
+Rule_AddOneShot(Level5attack, 5)
+end
+
+function Level5attack()
+
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )
+Cmd_SetStance( "CENTER", STANCE_Attack )  
+Rule_AddInterval(Checkifover5, 5)
+end
+
+function Checkifover5()
+
+if SGroup_IsEmpty( "CENTER" ) then
+Rule_Remove(Checkifover5)
+end 
+end
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL6]]-----------------------------------------
+-------------------------------------------------------------------------------
+
+function Level6spawn()
+
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_basilisk", "Spawngate2", 1, 1 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 8, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 8, 13 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_khorne_berserker", "Spawngate1", 2, 9 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_khorne_berserker", "Spawngate3", 2, 9 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 8, 13 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 8, 13 )
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_kasrkin", "Spawngate2", 2, 9 ) 
+Rule_AddOneShot(Level6attack, 5)
+end
+
+function Level6attack()
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_lemanruss", "Spawngate2", 2, 1)
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_SetStance( "CENTER", STANCE_Attack ) 
+Cmd_SetStance( "WEST", STANCE_Attack )
+Cmd_SetStance( "EAST", STANCE_Attack ) 
+Rule_AddInterval(Checkifover6, 5)
+end
+
+function Checkifover6()
+
+if SGroup_Count( "CENTER" )<2 then
+EGroup_DestroyAllEntities( "RainStop")
+Util_MissionTitle("Commander, we are picking up a strange signal... countering signal...")
+Player_UnRestrictAbility( g_Player1, "guard_strafing_run" )
+Player_UnRestrictAbility( g_Player2, "guard_strafing_run" )
+Player_UnRestrictAbility( g_Player3, "guard_strafing_run" )
+Player_GrantResearch( g_Player1, "guard_enable_strafing_run" )
+Player_GrantResearch( g_Player1, "guard_enable_strafing_run" )
+Player_GrantResearch( g_Player1, "guard_enable_strafing_run" )
+Rule_AddOneShot(Level7Spawn, 5)
+Rule_AddOneShot(Level7BSpawn, 10)
+Rule_AddOneShot(Level7CSpawn, 15)
+Rule_Remove(Checkifover6)
+end 
+end
+
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL7A]]-----------------------------------------
+-------------------------------------------------------------------------------
+
+function Level7Spawn()
+Util_MissionTitle("SIR! Infiltrators!!")
+Actor_PlaySpeech(  ACT.Mauser, 1000110)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_marine_squad", "TeleportWest", 1, 8 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_obliterator", "Droppodwest", 1, 5 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_obliterator", "Droppodcenterwest", 1, 5 )
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropWest", "guard_squad_kasrkin", g_PosDropPodWest, 2, 9)
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropWest1", "guard_squad_kasrkin", g_PosDropPodCenterWest, 2, 9)
+
+Rule_AddOneShot(Level7Attack, 5)
+end
+
+function Level7Attack()
+
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_SetStance( "WEST", STANCE_Attack ) 
+Cmd_AttackMoveMarker( "DropWest", "Attackwest" )
+Cmd_AttackMoveMarker( "DropWest1", "Attackwest" )
+Cmd_SetStance( "DropWest", STANCE_Attack )
+Cmd_SetStance( "DropWest1", STANCE_Attack )
+Rule_AddInterval(IdleDropWest, 15)
+Rule_AddInterval(IdleDropWest1, 15)
+end
+
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL7B]]-----------------------------------------
+-------------------------------------------------------------------------------
+
+function Level7BSpawn()
+
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropCenter", "guard_squad_kasrkin", g_PosDropPodCenterWest, 2, 9)
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropCenter1", "guard_squad_kasrkin", g_PosDropPodCenter, 2, 9)
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropCenter2", "guard_squad_kasrkin", g_PosDropPodCenterEast, 2, 9)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_marine_squad", "Teleportcenterwest", 1, 8)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_marine_squad", "Teleportcentereast", 1, 8)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_obliterator", "Droppodcenter", 1, 5)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_obliterator", "Droppodcenterwest", 1, 5)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_obliterator", "Droppodcentereast", 1, 5)
+Rule_AddOneShot(Level7Battack, 5)
+end
+
+function Level7Battack()
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )
+Cmd_SetStance( "CENTER", STANCE_Attack ) 
+Cmd_AttackMoveMarker( "DropCenter", "Attackcenter" )
+Cmd_AttackMoveMarker( "DropCenter1", "Attackcenter" )
+Cmd_AttackMoveMarker( "DropCenter2", "Attackcenter" )
+Cmd_SetStance( "DropCenter", STANCE_Attack ) 
+Cmd_SetStance( "DropCenter1", STANCE_Attack ) 
+Cmd_SetStance( "DropCenter2", STANCE_Attack ) 
+Rule_AddInterval(IdleDropCenter, 15)
+Rule_AddInterval(IdleDropCenter1, 15)
+Rule_AddInterval(IdleDropCenter2, 15)
+end
+
+
+
+-------------------------------------------------------------------------------
+----------------------------[[LEVEL7c]]-----------------------------------------
+-------------------------------------------------------------------------------
+
+function Level7CSpawn()
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropEast", "guard_squad_kasrkin", g_PosDropPodCenterEast, 2, 9)
+Util_CreateSquadsAndDropPodIn( g_Player4, "DropEast1", "guard_squad_kasrkin", g_PosDropPodEast, 2, 9)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_obliterator", "Droppodcentereast", 1, 5 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_obliterator", "Droppodeast", 1, 5 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_marine_squad", "Teleporteast", 1, 8 ) 
+Rule_AddOneShot(Level7Cattack, 5)
+end
+
+function Level7Cattack()
+
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_SetStance( "EAST", STANCE_Attack )
+Cmd_AttackMoveMarker( "DropEast", "Attackeast" )
+Cmd_AttackMoveMarker( "DropEast1", "Attackeast" )
+Cmd_SetStance( "DropEast", STANCE_Attack )
+Cmd_SetStance( "DropEast1", STANCE_Attack )
+Rule_AddInterval(IdleDropEast, 15)
+Rule_AddInterval(IdleDropEast1, 15)
+Rule_AddInterval(Checkifover7C, 5)
+end
+
+function Checkifover7C()
+if SGroup_IsEmpty( "EAST" ) and SGroup_Count( "CENTER" )<2 and SGroup_IsEmpty( "WEST" ) and SGroup_IsEmpty( "DropWest" ) and SGroup_IsEmpty( "DropWest1" ) and SGroup_IsEmpty( "DropCenter" ) and SGroup_IsEmpty( "DropCenter1" ) and SGroup_IsEmpty( "DropCenter2" ) and SGroup_IsEmpty( "DropEast" ) and SGroup_IsEmpty( "DropEast1" ) then
+Actor_PlaySpeech( ACT.Mauser, 3650003)
+Actor_PlaySpeech( ACT.Cultist, 1000670)
+SGroup_DestroyAllSquads( "CENTER")
+Util_MissionTitle("Do not be fooled commander! Intel says they are preparing for a final assault! Prepare yourselves")
+Rule_AddOneShot(Reinforcements, 60)
+Rule_AddOneShot(FinalAssault, 90)
+Rule_Remove(Checkifover7C)
+Rule_Remove(IdleDropEast)
+Rule_Remove(IdleDropWest)
+Rule_Remove(IdleDropCenter)
+Rule_Remove(IdleDropWest1)
+Rule_Remove(IdleDropCenter1)
+Rule_Remove(IdleDropCenter2)
+Rule_Remove(IdleDropEast1)
+end 
+end
+
+
+-------------------------------------------------------------------------------
+----------------------------[[Reinforcements]]---------------------------------
+-------------------------------------------------------------------------------
+function Reinforcements()
+Actor_PlaySpeech( ACT.Guardsman, 2581070)
+Util_CreateSquadsAtMarkerEx( g_Player1, "ReinforcementsTrue1", "guard_squad_kasrkin", "ReinforcementsCenterWest", 1, 9)
+Util_CreateSquadsAtMarkerEx( g_Player2, "ReinforcementsTrue2", "guard_squad_kasrkin", "ReinforcementsWest", 1, 9)
+Util_CreateSquadsAtMarkerEx( g_Player3, "ReinforcementsTrue3", "guard_squad_kasrkin", "ReinforcementsEast", 1, 9)
+Rule_AddOneShot(Reinforcements1, 3)
+end
+
+function Reinforcements1()
+Cmd_MoveToMarker( "ReinforcementsTrue1", "Rally1")
+Cmd_MoveToMarker( "ReinforcementsTrue2", "Rally2")
+Cmd_MoveToMarker( "ReinforcementsTrue3", "Rally3")
+Util_CreateSquadsAtMarkerEx( g_Player1, "ReinforcementsTrue1", "guard_squad_hellhound", "ReinforcementsCenterEast", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player2, "ReinforcementsTrue2", "guard_squad_hellhound", "ReinforcementsCenterWest", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player3, "ReinforcementsTrue3", "guard_squad_hellhound", "ReinforcementsCenterEast", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player1, "ReinforcementsTrue1", "guard_squad_lemanruss", "ReinforcementsCenterWest", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player2, "ReinforcementsTrue2", "guard_squad_lemanruss", "ReinforcementsCenterWest", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player3, "ReinforcementsTrue3", "guard_squad_lemanruss", "ReinforcementsCenterEast", 1, 1)
+Rule_AddOneShot(Reinforcements2, 1)
+end
+
+function Reinforcements2()
+Cmd_MoveToMarker( "ReinforcementsTrue1", "Rally1")
+Cmd_MoveToMarker( "ReinforcementsTrue2", "Rally2")
+Cmd_MoveToMarker( "ReinforcementsTrue3", "Rally3")
+end
+
+
+-------------------------------------------------------------------------------
+---------------------------[[Final Assault]]-----------------------------------
+-------------------------------------------------------------------------------
+function FinalAssault()
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_cultist", "Spawngate1", 10, 10)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_cultist", "Spawngate2", 10, 10)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_cultist", "Spawngate3", 10, 10)
+Rule_AddOneShot(FinalAssault1, 5)
+end
+
+function FinalAssault1()
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_SetStance( "EAST", STANCE_Attack ) 
+Cmd_SetStance( "WEST", STANCE_Attack )
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )  
+Cmd_SetStance( "CENTER", STANCE_Attack ) 
+Rule_AddOneShot(FinalAssault2, 5)
+end
+
+function FinalAssault2()
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_hellhound", "Spawngate1", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_hellhound", "Spawngate2", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_hellhound", "Spawngate3", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_basilisk", "Spawngate1", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_basilisk", "Spawngate2", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_basilisk", "Spawngate3", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_sentinel", "Spawngate1", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_sentinel", "Spawngate2", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_sentinel", "Spawngate3", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 3, 12)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 3, 12)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 3, 12)
+Rule_AddOneShot(FinalAssault3, 3)
+end
+
+function FinalAssault3()
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_SetStance( "EAST", STANCE_Attack ) 
+Cmd_SetStance( "WEST", STANCE_Attack )
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )  
+Cmd_SetStance( "CENTER", STANCE_Attack ) 
+Rule_AddOneShot(SneakAttack, 15)
+end
+
+function SneakAttack()
+Actor_PlaySpeech( ACT.Mauser, 2585070)
+Util_CreateSquadsAtMarkerEx( g_Player1, "ReinforcementsFalse1", "guard_squad_guardsmen", "ReinforcementsCenterWest", 2, 9)
+Util_CreateSquadsAtMarkerEx( g_Player2, "ReinforcementsFalse2", "guard_squad_guardsmen", "ReinforcementsWest", 2, 9)
+Util_CreateSquadsAtMarkerEx( g_Player3, "ReinforcementsFalse3", "guard_squad_guardsmen", "ReinforcementsEast", 2, 9)
+Util_CreateSquadsAtMarkerEx( g_Player1, "ReinforcementsFalse1", "guard_squad_lemanruss", "ReinforcementsCenterWest", 2, 1)
+Util_CreateSquadsAtMarkerEx( g_Player2, "ReinforcementsFalse2", "guard_squad_lemanruss", "ReinforcementsCenterWest", 2, 1)
+Util_CreateSquadsAtMarkerEx( g_Player3, "ReinforcementsFalse3", "guard_squad_lemanruss", "ReinforcementsCenterEast", 2, 1)
+Rule_AddInterval(IdleReinforcementsWest, 30)
+Rule_AddInterval(IdleReinforcementsCenter, 31)
+Rule_AddInterval(IdleReinforcementsEast, 32)
+Rule_AddOneShot(SneakAttack2, 3)
+end
+
+function SneakAttack2()
+Cmd_MoveToMarker( "ReinforcementsFalse1", "Rally1")
+Cmd_MoveToMarker( "ReinforcementsFalse2", "Rally2")
+Cmd_MoveToMarker( "ReinforcementsFalse3", "Rally3")
+Rule_AddOneShot(SneakAttack3, 2)
+Util_MissionTitle("Behind us! Traitors!!")
+end
+
+function SneakAttack3()
+SGroup_SetPlayerOwner( "ReinforcementsFalse1", g_Player4 )
+SGroup_SetPlayerOwner( "ReinforcementsFalse2", g_Player4 )
+SGroup_SetPlayerOwner( "ReinforcementsFalse3", g_Player4 )
+Cmd_AttackMoveMarker( "ReinforcementsFalse1", "Attackwest" )
+Cmd_AttackMoveMarker( "ReinforcementsFalse2", "Attackcenter" )
+Cmd_AttackMoveMarker( "ReinforcementsFalse3", "Attackeast" )
+Cmd_SetStance( "ReinforcementsFalse1", STANCE_Attack ) 
+Cmd_SetStance( "ReinforcementsFalse2", STANCE_Attack )
+Cmd_SetStance( "ReinforcementsFalse3", STANCE_Attack ) 
+Rule_AddOneShot(FinalAssault4, 20)
+end
+
+function FinalAssault4()
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_kasrkin", "Spawngate1", 1, 9)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_kasrkin", "Spawngate2", 1, 9)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_kasrkin", "Spawngate3", 1, 9)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_bloodthirster", "Spawngate1", 2, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_bloodthirster", "Spawngate2", 2, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_bloodthirster", "Spawngate3", 2, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_lemanruss", "Spawngate1", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_lemanruss", "Spawngate2", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_lemanruss", "Spawngate3", 1, 1)
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 3, 12)
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 3, 12)
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 3, 12)
+Rule_AddOneShot(FinalAssault5, 3)
+end
+
+function FinalAssault5()
+Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+Cmd_SetStance( "EAST", STANCE_Attack ) 
+Cmd_SetStance( "WEST", STANCE_Attack )
+Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )  
+Cmd_SetStance( "CENTER", STANCE_Attack ) 
+Rule_AddInterval(FinalAssaultCheckIfOver, 5)
+end
+
+function FinalAssaultCheckIfOver()
+if SGroup_Count( "EAST" )<2 and SGroup_Count( "CENTER" )<2 and SGroup_Count( "WEST" )<2 and SGroup_IsEmpty( "ReinforcementsFalse1") and SGroup_IsEmpty( "ReinforcementsFalse2") and SGroup_IsEmpty( "ReinforcementsFalse3") then
+Rule_Remove(IdleReinforcementsWest)
+Rule_Remove(IdleReinforcementsCenter)
+Rule_Remove(IdleReinforcementsEast)
+Actor_PlaySpeech(  ACT.Mauser, 2631072)
+EGroup_ReSpawn( "EGPOINTS")
+Rule_AddOneShot(HarrassmentWest, 15)
+Rule_AddOneShot(HarrassmentCenter, 17)
+Rule_AddOneShot(HarrassmentEast, 19)
+Rule_AddInterval(HarrassmentCheck, 30)
+Rule_AddInterval(CheckForVictory, 20)
+Util_MissionTitle("They are still attacking while they have some of our lines!")
+Rule_AddOneShot(FinalTaskMessage, 5)
+Rule_Remove(FinalAssaultCheckIfOver)
+end
+end
+
+function FinalTaskMessage()
+Util_MissionTitle("Take ALL the strategic and critical points back!")
+end
+
+-------------------------------------------------------------------------------
+----------------------------[[Harassment]]-------------------------------------
+-------------------------------------------------------------------------------
+function HarrassmentWest()
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 4, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "chaos_squad_cultist", "Spawngate1", 2, 10 ) 
+Rule_AddOneShot(HarrassmentWestAttack, 3)
+end
+
+	function HarrassmentWestAttack()
+	Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+	Cmd_SetStance( "WEST", STANCE_Attack )	
+	Rule_AddInterval(CheckIfHarrassmentWestOver, 5)
+	end
+	
+	function CheckIfHarrassmentWestOver()
+	if SGroup_IsEmpty( "WEST" ) then
+	Rule_AddOneShot(HarrassmentWest1, 20)
+	Rule_Remove(CheckIfHarrassmentWestOver)
+	end
+	end
+		function HarrassmentWest1()
+		Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 2, 13 ) 
+		Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_lemanruss", "Spawngate1", 1, 1 )
+		Rule_AddOneShot(HarrassmentWestAttack1, 3) 
+		end
+		
+		function HarrassmentWestAttack1()
+		Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+		Cmd_SetStance( "WEST", STANCE_Attack )	
+		Rule_AddInterval(CheckIfHarrassmentWestOver1, 5)
+		end
+
+		function CheckIfHarrassmentWestOver1()
+		if SGroup_IsEmpty( "WEST" ) then
+		Rule_AddOneShot(HarrassmentWest2, 20)
+		Rule_Remove(CheckIfHarrassmentWestOver1)
+		end
+		end
+
+			function HarrassmentWest2()
+			Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_guardsmen", "Spawngate1", 2, 13 ) 
+			Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_hellhound", "Spawngate1", 1, 1 )
+			Util_CreateSquadsAtMarkerEx( g_Player4, "WEST", "guard_squad_sentinel", "Spawngate1", 2, 1)
+			Rule_AddOneShot(HarrassmentWestAttack2, 3) 
+			end
+		
+			function HarrassmentWestAttack2()
+			Cmd_AttackMoveMarker( "WEST", "Attackwest" )
+			Cmd_SetStance( "WEST", STANCE_Attack )	
+			Rule_AddInterval(CheckIfHarrassmentWestOver2, 5)
+			end
+
+			function CheckIfHarrassmentWestOver2()
+			if SGroup_IsEmpty( "WEST" ) then
+			Rule_AddOneShot(HarrassmentWest, 20)
+			Rule_Remove(CheckIfHarrassmentWestOver2)
+			end
+			end
+
+
+function HarrassmentCenter()
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 4, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "chaos_squad_cultist", "Spawngate2", 2, 10 ) 
+Rule_AddOneShot(HarrassmentCenterAttack, 3)
+end
+
+	function HarrassmentCenterAttack()
+	Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )
+	Cmd_SetStance( "CENTER", STANCE_Attack )	
+	Rule_AddInterval(CheckIfHarrassmentCenterOver, 5)
+	end
+	
+	function CheckIfHarrassmentCenterOver()
+	if SGroup_IsEmpty( "CENTER" ) then
+	Rule_AddOneShot(HarrassmentCenter1, 20)
+	Rule_Remove(CheckIfHarrassmentCenterOver)
+	end
+	end
+		function HarrassmentCenter1()
+		Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 2, 13 ) 
+		Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_lemanruss", "Spawngate2", 1, 1 )
+		Rule_AddOneShot(HarrassmentCenterAttack1, 3) 
+		end
+		
+		function HarrassmentCenterAttack1()
+		Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )
+		Cmd_SetStance( "CENTER", STANCE_Attack )	
+		Rule_AddInterval(CheckIfHarrassmentCenterOver1, 5)
+		end
+
+		function CheckIfHarrassmentCenterOver1()
+		if SGroup_IsEmpty( "CENTER" ) then
+		Rule_AddOneShot(HarrassmentCenter2, 20)
+		Rule_Remove(CheckIfHarrassmentCenterOver1)
+		end
+		end
+
+			function HarrassmentCenter2()
+			Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_guardsmen", "Spawngate2", 2, 13 ) 
+			Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_hellhound", "Spawngate2", 1, 1 )
+			Util_CreateSquadsAtMarkerEx( g_Player4, "CENTER", "guard_squad_sentinel", "Spawngate2", 2, 1)
+			Rule_AddOneShot(HarrassmentCenterAttack2, 3) 
+			end
+		
+			function HarrassmentCenterAttack2()
+			Cmd_AttackMoveMarker( "CENTER", "Attackcenter" )
+			Cmd_SetStance( "CENTER", STANCE_Attack )	
+			Rule_AddInterval(CheckIfHarrassmentWestOver2, 5)
+			end
+
+			function CheckIfHarrassmentCenterOver2()
+			if SGroup_IsEmpty( "CENTER" ) then
+			Rule_AddOneShot(HarrassmentCenter, 20)
+			Rule_Remove(CheckIfHarrassmentCenterOver2)
+			end
+			end
+
+function HarrassmentEast()
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 4, 13 ) 
+Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "chaos_squad_cultist", "Spawngate3", 2, 10 ) 
+Rule_AddOneShot(HarrassmentEastAttack, 3)
+end
+
+	function HarrassmentEastAttack()
+	Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+	Cmd_SetStance( "EAST", STANCE_Attack )	
+	Rule_AddInterval(CheckIfHarrassmentEastOver, 5)
+	end
+	
+	function CheckIfHarrassmentEastOver()
+	if SGroup_IsEmpty( "EAST" ) then
+	Rule_AddOneShot(HarrassmentEast1, 20)
+	Rule_Remove(CheckIfHarrassmentEastOver)
+	end
+	end
+		function HarrassmentEast1()
+		Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 2, 13 ) 
+		Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_lemanruss", "Spawngate3", 1, 1 )
+		Rule_AddOneShot(HarrassmentEastAttack1, 3) 
+		end
+		
+		function HarrassmentEastAttack1()
+		Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+		Cmd_SetStance( "EAST", STANCE_Attack )	
+		Rule_AddInterval(CheckIfHarrassmentEastOver1, 5)
+		end
+
+		function CheckIfHarrassmentEastOver1()
+		if SGroup_IsEmpty( "EAST" ) then
+		Rule_AddOneShot(HarrassmentEast2, 20)
+		Rule_Remove(CheckIfHarrassmentEastOver1)
+		end
+		end
+
+			function HarrassmentEast2()
+			Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_guardsmen", "Spawngate3", 2, 13 ) 
+			Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_hellhound", "Spawngate3", 1, 1 )
+			Util_CreateSquadsAtMarkerEx( g_Player4, "EAST", "guard_squad_sentinel", "Spawngate3", 2, 1)
+			Rule_AddOneShot(HarrassmentEastAttack2, 3) 
+			end
+		
+			function HarrassmentEastAttack2()
+			Cmd_AttackMoveMarker( "EAST", "Attackeast" )
+			Cmd_SetStance( "EAST", STANCE_Attack )	
+			Rule_AddInterval(CheckIfHarrassmentEastOver2, 5)
+			end
+
+			function CheckIfHarrassmentEastOver2()
+			if SGroup_IsEmpty( "EAST" ) then
+			Rule_AddOneShot(HarrassmentEast, 20)
+			Rule_Remove(CheckIfHarrassmentEastOver2)
+			end
+			end
+
+-------------------------------------------------------------------------------
+----------------------------[[Harrassment Stop---------------------------------
+-------------------------------------------------------------------------------
+
+function HarrassmentCheck()
+
+if Player_OwnsEGroup( g_Player2, "eg_HarrassStopWest") then
+Rule_Remove(HarrassmentWest)
+Rule_Remove(HarrassmentWest1)
+Rule_Remove(HarrassmentWest2)
+Rule_Remove(HarrassmentWestAttack)
+Rule_Remove(HarrassmentWestAttack1)
+Rule_Remove(HarrassmentWestAttack2)
+end
+
+if Player_OwnsEGroup( g_Player2, "eg_HarassStopCenter") then
+Rule_Remove(HarrassmentCenter)
+Rule_Remove(HarrassmentCenter1)
+Rule_Remove(HarrassmentCenter2)
+Rule_Remove(HarrassmentCenterAttack)
+Rule_Remove(HarrassmentCenterAttack1)
+Rule_Remove(HarrassmentCenterAttack2)
+end
+
+if Player_OwnsEGroup( g_Player2, "eg_HarrassStopEast") then
+Rule_Remove(HarrassmentEast)
+Rule_Remove(HarrassmentEast1)
+Rule_Remove(HarrassmentEast2)
+Rule_Remove(HarrassmentEastAttack)
+Rule_Remove(HarrassmentEastAttack1)
+Rule_Remove(HarrassmentEastAttack2)
+end
+end
+-------------------------------------------------------------------------------
+----------------------------[[Victory Check]]----------------------------------
+-------------------------------------------------------------------------------
+function CheckForVictory()
+	if Player_OwnsEGroup( g_Player1, "eg_CenterCrit") then
+	Rule_AddOneShot(ChangeOwner, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_CenterCrit") then
+	Rule_AddOneShot(ChangeOwner, 1)
+	end
+		function ChangeOwner()
+		EGroup_SetPlayerOwner("eg_CenterCrit", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_EastCrit") then
+	Rule_AddOneShot(ChangeOwner1, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_EastCrit") then
+	Rule_AddOneShot(ChangeOwner1, 1)
+	end
+		function ChangeOwner1()
+		EGroup_SetPlayerOwner("eg_EastCrit", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_WestCrit") then
+	Rule_AddOneShot(ChangeOwner2, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_WestCrit") then
+	Rule_AddOneShot(ChangeOwner2, 1)
+	end
+		function ChangeOwner2()
+		EGroup_SetPlayerOwner("eg_WestCrit", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_EastStrat") then
+	Rule_AddOneShot(ChangeOwner3, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_EastStrat") then
+	Rule_AddOneShot(ChangeOwner3, 1)
+	end
+		function ChangeOwner3()
+		EGroup_SetPlayerOwner("eg_EastStrat", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_WestStrat") then
+	Rule_AddOneShot(ChangeOwner4, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_WestStrat") then
+	Rule_AddOneShot(ChangeOwner4, 1)
+	end
+		function ChangeOwner4()
+		EGroup_SetPlayerOwner("eg_WestStrat", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_CenterWestStrat1") then
+	Rule_AddOneShot(ChangeOwner5, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_CenterWestStrat1") then
+	Rule_AddOneShot(ChangeOwner5, 1)
+	end
+		function ChangeOwner5()
+		EGroup_SetPlayerOwner("eg_CenterWestStrat1", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_CenterWestStrat2") then
+	Rule_AddOneShot(ChangeOwner6, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_CenterWestStrat2") then
+	Rule_AddOneShot(ChangeOwner6, 1)
+	end
+		function ChangeOwner6()
+		EGroup_SetPlayerOwner("eg_CenterWestStrat2", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_CenterEastStrat1") then
+	Rule_AddOneShot(ChangeOwner7, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_CenterEastStrat1") then
+	Rule_AddOneShot(ChangeOwner7, 1)
+	end
+		function ChangeOwner7()
+		EGroup_SetPlayerOwner("eg_CenterEastStrat1", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_CenterEastStrat2") then
+	Rule_AddOneShot(ChangeOwner8, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_CenterEastStrat2") then
+	Rule_AddOneShot(ChangeOwner8, 1)
+	end
+		function ChangeOwner8()
+		EGroup_SetPlayerOwner("eg_CenterEastStrat2", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player1, "eg_CenterStrat") then
+	Rule_AddOneShot(ChangeOwner9, 1)
+	
+	elseif Player_OwnsEGroup( g_Player3, "eg_CenterStrat") then
+	Rule_AddOneShot(ChangeOwner9, 1)
+	end
+		function ChangeOwner9()
+		EGroup_SetPlayerOwner("eg_CenterStrat", g_Player2)
+		end
+	if Player_OwnsEGroup( g_Player2, "EGPOINTS") then
+	Rule_AddOneShot(Victory, 30)
+	Actor_PlaySpeech( ACT.Cultist, 1000670)
+	Util_MissionTitle("Well done Commander! Stokie Point has been held!")
+	Rule_AddOneShot(Victory1, 5)
+	Rule_Remove(CheckForVictory)
+	end
+end
+-------------------------------------------------------------------------------
+----------------------------[[Victory]]----------------------------------------
+-------------------------------------------------------------------------------
+function Victory1()
+Util_MissionTitle("With their attack stalled you are to be reassigned...")
+Rule_AddOneShot(Victory2, 5)
+end
+
+function Victory2()
+Util_MissionTitle("To the main line where we are about to launch our counter attack")
+end
+
+function Victory()
+Player_Kill( g_Player4 ) 
+Util_CheckOneTeamLeft( "Annihilate" )
+end
+-------------------------------------------------------------------------------
+----------------------------[[LOSE1]]------------------------------------------
+-------------------------------------------------------------------------------
+function CheckLose()
+
+if( Player_HasBuildingsExcept(g_Player1, _Annihilate.g_annihilate_exceptions) == false ) and ( Player_HasBuildingsExcept(g_Player2, _Annihilate.g_annihilate_exceptions) == false ) and ( Player_HasBuildingsExcept(g_Player3, _Annihilate.g_annihilate_exceptions) == false )  then
+				
+Player_Kill( g_Player1 )
+Player_Kill( g_Player2 )
+Player_Kill( g_Player3 ) 
+Util_CheckOneTeamLeft( "Annihilate" )
+end
+end

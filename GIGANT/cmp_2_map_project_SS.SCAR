@@ -1,0 +1,484 @@
+--Stargate SCAR by Fuggles--
+
+--Stargate Concept by Jaguar Lord--
+
+--Code For Soulstorm--
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+
+
+function OnInit()
+
+print "I want a good clean fight.. LET'S GET IT ON!"
+
+
+
+
+	Rule_AddIntervalDelay(Rule_Gate2, 1,5)
+	Rule_AddIntervalDelay(LEDS, 1,5)
+	Rule_AddIntervalDelay(teleport1, 0,5)
+	Rule_AddOneShot(players,0)
+
+	Rule_AddInterval(lazarus,0)
+	
+
+
+
+-- the following definitions are for the world map logic
+t_Beacon = Util_MakeBlueprintTable(
+		"objective_beacon_02_red"
+		)
+t_Blue = Util_MakeBlueprintTable(
+		"objective_beacon_01"
+		)
+
+
+
+
+
+
+--These following list are guys who trigger the beacons into life
+
+--if any units are in here that are not in your game, for example Soulstorm units and you play Dark Crusade, or mod characters, then it will SCAR error. Double hyphen tells the game to ignore that line, so remove those to enable any that you want. 
+
+
+t_Commander = Util_MakeBlueprintTable(
+
+--DARK CRUSADE UNITS
+
+		"space_marine_squad_force_commander",
+		"chaos_squad_lord",
+		"guard_squad_command_squad",
+		"eldar_squad_farseer",
+		"necron_lord_squad",
+		"ork_squad_mek_boy",
+		"chaos_squad_daemon_prince",
+		"necron_night_bringer",
+		
+
+
+--SOULSTORM UNITS		
+		"sisters_squad_canoness",
+		"dark_eldar_squad_archon",
+		"necron_deceiver_squad",
+
+--MOD UNITS
+
+
+--TYRANIDS
+		--"tyranids_squad_broodlord",
+
+--DAEMON HUNTERS
+		--"inquisition_squad_inquisitor_lord",
+
+--WITCH HUNTERS
+		--"witch_hunters_squad_canoness",
+
+--STEEL LEGION
+		--"steel_legion_squad_lieutenant",
+
+
+
+--DO NOT REMOVE
+		"tau_commander_squad"
+		)
+
+
+
+
+
+
+--This list is units which cannot use the teleport gate, fliers basically.
+
+t_Banned = Util_MakeBlueprintTable(
+		
+		"space_marine_squad_tempest",
+		"chaos_squad_hell_talon",
+		"dark_eldar_squad_raven",
+		"eldar_squad_nightwing",
+		"guard_squad_marauder",
+		"necron_scarab_squad",
+		"ork_squad_fighta_bomba",
+		"sisters_squad_lightning",
+		"tau_barracuda_squad"
+
+		
+
+
+		)
+
+
+
+g_beacon = "objective_beacon_01"
+g_redbeacon = "objective_beacon_02_red"
+g_marker = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+g_lock = {false,false,false,false,false,false,false,false}
+g_marker_red = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+g_capture1 = {false,false,false,false,false,false,false,false}
+g_teleportlock = {true,true,true,true,true,true,true,true}
+t_Players = {g_Player1,g_Player2, g_Player3, g_Player4, g_Player5, g_Player6, g_Player7, g_Player8}
+g_captured = {0,0,0,0,0,0,0,0}
+--BeaconQ is a trinary(?) toggle to show whether it is off, on or red, which is 0,1 or 2 respectively
+BeaconQ = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+--Each beacon spawned increases an internal integer counter, so the thing to do is cross reference it
+BeaconID = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+--This will keep track of the internal integer counter
+Beaconcount = 0
+Beaconreset = {0,0,0,0,0,0,0,0}
+
+--teleport section
+
+--This is how long you spend in transit, it's 8 for every second
+g_TunnelDelay = 8
+
+
+g_EntryCount1 = 0
+g_ExitCount1 = 0
+g_EntryCount2 = 0
+g_ExitCount2 = 0
+g_EntryCount3 = 0
+g_ExitCount3 = 0
+g_EntryCount4 = 0
+g_ExitCount4 = 0
+g_EntryCount5 = 0
+g_ExitCount5 = 0
+g_EntryCount6 = 0
+g_ExitCount6 = 0
+g_EntryCount7 = 0
+g_ExitCount7 = 0
+g_EntryCount8 = 0
+g_ExitCount8 = 0
+t_Tunnel1Queue = { }
+t_Tunnel2Queue = { }
+t_Tunnel3Queue = { }
+t_Tunnel4Queue = { }
+t_Tunnel5Queue = { }
+t_Tunnel6Queue = { }
+t_Tunnel7Queue = { }
+t_Tunnel8Queue = { }
+
+t_Exit = {"teleport2","teleport1",teleport2,teleport2,teleport2,teleport2,teleport2,teleport2 }
+
+end
+Scar_AddInit(OnInit)
+
+
+
+
+
+
+
+--I'm running this once at the start to get it out of the way and let me at the juicy goodness
+function players()
+local count = World_GetPlayerCount()
+	for i = 0, count - 1 do
+	j = i + 1
+		t_Players[j]= World_GetPlayerAt(i)
+		end
+end
+
+
+--This function controls the commander picking location rules
+function Rule_Gate2()
+for l = 1, 8 do
+g_capture1[l] = 0
+local playerCount = World_GetPlayerCount()
+    for w = 1, playerCount do
+	if EGroup_IsCapturedByPlayer("cp"..l, t_Players[w], true) then
+		g_capture1[l] = w
+	   if g_lock[l] ==false then
+		for i = 1, 8 do
+		m = (( l * 10) + i)
+		if Player_AreSquadsNearMarker(t_Players[w], "marker"..l..i) and g_capture1[i] == w and i ~= l then
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_Player_Squads"))
+		Player_GetAllSquadsNearMarker(t_Players[w],"sg_Player_Squads","marker"..l..i)
+		
+		local countsquads = SGroup_CountSpawned(SGroup_FromName("sg_Player_Squads"))
+		
+			for j = 1, countsquads do
+			SGroup_Clear(SGroup_CreateIfNotFound("sg_Player_teleport"))
+			SGroup_Add(SGroup_FromName("sg_Player_teleport"), SGroup_GetSpawnedSquadAt("sg_Player_Squads",j))
+				if SGroup_ContainsBlueprints(SGroup_FromName("sg_Player_teleport"), t_Commander, false)== true then
+				Util_MarkerFX( "beaconmarker"..m, "data:Art/Events/Unit_Upgrade_Morale_FX/Reinforce_Trooper" )
+				g_marker[m] = g_marker[m] + 1
+			
+					if (g_marker[m] == 5) then
+						if (i == 1) then
+						 t_Exit[l] = "teleport1"
+						 g_teleportlock[l] = false
+						elseif (i == 2) then
+						 t_Exit[l] = "teleport2"
+						g_teleportlock[l] = false
+						elseif (i == 3) then
+						 t_Exit[l] = "teleport3"
+						 g_teleportlock[l] = false						
+						elseif (i == 4) then
+						 t_Exit[l] = "teleport4"
+						 g_teleportlock[l] = false						
+						elseif (i == 5) then
+						 t_Exit[l] = "teleport5"
+						 g_teleportlock[l] = false						
+						elseif (i == 6) then
+						 t_Exit[l] = "teleport6"
+						g_teleportlock[l] = false						
+						elseif (i == 7) then
+						 t_Exit[l] = "teleport7"
+						 g_teleportlock[l] = false						
+						elseif (i == 8) then
+						 t_Exit[l]  = "teleport8"
+						 g_teleportlock[l] = false
+						end
+					g_marker[m] = 0
+					g_marker_red[m] = 1
+					g_lock[l] = true
+					end
+				else g_marker[m] = 0
+				end
+		
+	
+			end
+		else g_marker[m] = 0
+
+
+		end
+		end
+end
+end
+end
+end
+end
+
+
+--This function controls the beacon lights on the maps
+function LEDS()
+for a = 1, 8 do
+
+Beaconreset[a] = 0
+
+local playerCount = World_GetPlayerCount()
+    for w = 1, playerCount do
+
+	if EGroup_IsCapturedByPlayer("cp"..a, t_Players[w], true) then g_capture1[a] = w
+	Beaconreset[a] = 1
+--check one map at a time for points to add or change
+		for b = 1, 8 do
+		c = (( a * 10) + b)
+
+		
+--check and add a blue if you own the point
+
+		
+			if g_capture1[b] == w then
+				if BeaconQ[c] == 0 then
+				Util_CreateBeaconMarker_Blue("beaconmarker" ..c )
+				BeaconQ[c] = 1 
+				Beaconcount = Beaconcount +1
+				BeaconID[c] = Beaconcount
+				end
+		
+--check for reds and starts a timer if one found
+				if BeaconQ[c] == 2 then
+				g_marker_red[c] = g_marker_red[c] + 1
+				--this value is how long the gate is open for
+					if (g_marker_red[c] == 20) then
+					Util_RemoveBeaconMarker(BeaconID[c])
+					BeaconQ[c] = 0
+					g_lock[a] = false
+					g_teleportlock[a] = true
+					g_marker_red[c] = 0 
+					end	
+				end
+
+
+--time up, swap red with blue
+				if (g_marker_red[c] == 1) then
+				Util_RemoveBeaconMarker(BeaconID[c])
+				Util_CreateBeaconMarker_Red("beaconmarker" ..c )
+				BeaconQ[c] = 2 
+				Beaconcount = Beaconcount +1
+				BeaconID[c] = Beaconcount
+				end
+
+--I may have lost a point, so check
+			elseif g_capture1[b] ~= w then
+				if BeaconQ[c] ~= 0 then
+				Util_RemoveBeaconMarker(BeaconID[c])
+				BeaconQ[c] = 0
+				end
+			end
+		
+		end
+		
+	end
+
+
+
+
+
+			
+
+					
+end
+
+if Beaconreset[a] == 0 then
+
+--no one owns this map any more (man down!) so clear it up
+
+		for b = 1, 8 do
+			c = (( a * 10) + b)
+			if BeaconQ[c] ~= 0 then
+			Util_RemoveBeaconMarker(BeaconID[c])
+			BeaconQ[c] = 0
+			end
+		end
+
+end
+
+end
+
+end
+
+
+--[ORIGINAL TELEPORT SCRIPT BY RUOSTEINEN]--
+--This checks for activated teleporters, grabs any units and then flings them across the void
+
+function teleport1()
+for j = 1, 8 do
+	if j == 1 then
+	Q1 = t_Tunnel1Queue
+	EQ = g_EntryCount1
+	EX = g_ExitCount1
+	elseif j == 2 then
+	Q1 = t_Tunnel2Queue
+	EQ = g_EntryCount2
+	EX = g_ExitCount2
+	elseif j == 3 then
+	Q1 = t_Tunnel3Queue
+	EQ = g_EntryCount3
+	EX = g_ExitCount3
+	elseif j == 4 then
+	Q1 = t_Tunnel4Queue
+	EQ = g_EntryCount4
+	EX = g_ExitCount4
+	elseif j == 5 then
+	Q1 = t_Tunnel5Queue
+	EQ = g_EntryCount5
+	EX = g_ExitCount5
+	elseif j == 6 then
+	Q1 = t_Tunnel6Queue
+	EQ = g_EntryCount6
+	EX = g_ExitCount6
+	elseif j == 7 then
+	Q1 = t_Tunnel7Queue
+	EQ = g_EntryCount7
+	EX = g_ExitCount7
+	elseif j == 8 then
+	EQ = g_EntryCount8
+	EX = g_ExitCount8
+	Q1 = t_Tunnel8Queue
+	end
+
+	if (g_teleportlock[j] == false) then	
+		local playerCount = World_GetPlayerCount()
+		for w = 1, playerCount do
+		local playerCount = World_GetPlayerCount()
+		if Player_AreSquadsNearMarker( t_Players[w], "teleport"..j ) then
+		-- get the squads and despawn them
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_teleport"..EQ))
+		Player_GetAllSquadsNearMarker( t_Players[w], "sg_teleport"..EQ, "teleport"..j )
+		
+			count = SGroup_Count(SGroup_FromName("sg_teleport"..EQ))
+
+				for y =1, count do
+					SGroup_CreateIfNotFound("sg_teleport"..EQ)
+					countcheck = SGroup_Count(SGroup_FromName("sg_teleport"..EQ))
+						if countcheck > 0 then
+						SGroup_Clear(SGroup_CreateIfNotFound("sg_Potentials"..y))
+						SGroup_Add(SGroup_FromName("sg_Potentials"..y), SGroup_GetSpawnedSquadAt("sg_teleport"..EQ, y))
+
+						--check to see if the group does not contain any of the forbidden units.
+						if SGroup_ContainsBlueprints("sg_Potentials"..y, t_Banned, false) == false then
+						World_FXEventSquad("data:Art/Events/unit_ability_fx/eldar_warp_out", "sg_Potentials"..y)
+						SGroup_CreateIfNotFound("sg_Stargate"..EQ)
+						SGroup_Add(SGroup_FromName("sg_Stargate"..EQ), SGroup_GetSpawnedSquadAt("sg_Potentials"..y,1))
+							SGroup_DeSpawn( "sg_Stargate"..EQ )
+							EQ = EQ +1
+							table.insert(Q1,0)
+						end	
+						end
+				end
+		end
+		end
+	end	
+
+	
+	local numQueuing = table.getn(Q1)
+	if numQueuing > 0 then
+		-- loop through table, increasing all values by 1
+		for n = 1, numQueuing do
+			Q1[n] = Q1[n] + 1
+		
+		end
+		
+		-- spawns the next squad if it's been in long enough
+		if Q1[1] >= g_TunnelDelay then
+				SGroup_ReSpawnMarker( "sg_Stargate"..EX, t_Exit[j] )
+				World_FXEventSquad("data:Art/Events/unit_ability_fx/eldritch_storm_explosion", "sg_Stargate"..EX)
+				SGroup_Clear( SGroup_FromName("sg_Stargate"..EX) )
+				EX = EX +1
+				table.remove(Q1, 1)
+
+		end
+	end
+end	
+end
+
+
+--SCAR to resurrect heroes when they have the critical point in fuggles' village
+--It should be pretty obvious how to add mod units to this
+function lazarus()
+
+local playerCount = World_GetPlayerCount()
+    for p = 1, playerCount do
+	if EGroup_IsCapturedByPlayer("fugglescrit", t_Players[p], true) then
+	SGroup_Clear(SGroup_CreateIfNotFound("lazarus"))
+	SGroup_AddGroup(SGroup_CreateIfNotFound("lazarus"), Player_GetSquads(t_Players[p]))
+		if SGroup_ContainsBlueprints(SGroup_FromName("lazarus"), t_Commander, false) == false then
+			local bcrace = Player_GetRaceName( t_Players[p] )
+			
+			if(bcrace=="chaos_marine_race") then
+			T_Lazarus= "chaos_squad_lord"
+			elseif (bcrace=="eldar_race") then
+			T_Lazarus= "eldar_squad_farseer"
+			elseif (bcrace=="ork_race") then
+			T_Lazarus= "ork_squad_mek_boy"
+			elseif (bcrace=="space_marine_race") then
+			T_Lazarus= "space_marine_squad_force_commander"
+			elseif (bcrace=="guard_race") then
+			T_Lazarus= "guard_squad_command_squad"
+			elseif (bcrace=="tau_race") then
+			T_Lazarus= "tau_commander_squad"
+			elseif (bcrace=="necron_race") then
+			T_Lazarus= "necron_lord_squad"
+			elseif (bcrace=="sisters_race") then
+			T_Lazarus= "sisters_squad_canoness"
+			elseif (bcrace=="dark_eldar_race") then
+			T_Lazarus= "dark_eldar_squad_archon"
+			elseif (bcrace=="witch_hunters_race") then
+			T_Lazarus= "witch_hunters_squad_canoness"
+			elseif (bcrace=="tyranids_race") then
+			T_Lazarus= "tyranids_squad_broodlord"
+			elseif (bcrace=="inquisition_daemonhunt_race") then
+			T_Lazarus= "inquisition_squad_inquisitor_lord"
+			elseif (bcrace=="steel_legion_race") then
+			T_Lazarus= "steel_legion_squad_lieutenant"
+
+			end
+		Util_CreateSquadsAtMarkerEx(t_Players[p], "fugglesmarker", T_Lazarus, "fugglesmarker", 1, 1)
+		World_FXEventSquad("data:Art/Events/unit_ability_fx/eldritch_storm_explosion", "fugglesmarker")
+		end
+	end
+    end	
+end

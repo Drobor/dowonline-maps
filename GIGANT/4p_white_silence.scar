@@ -1,0 +1,26 @@
+import("ScarUtil.scar")
+
+function OnInit()
+	Rule_SetupNoBuildZones()
+end
+
+Scar_AddInit(OnInit)
+
+
+function Rule_SetupNoBuildZones()
+	playerOneRampLeft = World_Pos( -64,10,-94 )
+	playerOneRampRight = World_Pos( -33,25,-66 )
+	W40k_NoBuildZonePosition( playerOneRampLeft, playerOneRampRight )
+	
+	playerTwoRampLeft = World_Pos( 32,25,-94 )
+	playerTwoRampRight = World_Pos( 63,10,-66 )
+	W40k_NoBuildZonePosition( playerTwoRampLeft, playerTwoRampRight )
+	
+	playerThreeRampLeft = World_Pos( -64,10,66 )
+	playerThreeRampRight = World_Pos( -34,25,94 )
+	W40k_NoBuildZonePosition( playerThreeRampLeft, playerThreeRampRight )
+	
+	playerFourRampLeft = World_Pos( 32,25,66 )
+	playerFourRampRight = World_Pos( 63,10,94 )
+	W40k_NoBuildZonePosition( playerFourRampLeft, playerFourRampRight )
+end

@@ -1,0 +1,1328 @@
+-- SCAR code for assault map V7
+-- feel fre to use this code, just let me know
+-- (c) Dark40k 2008
+Assault_map_version="v7 - 02/02/2008"
+--
+-- 
+-- map scar code should contain:
+-- import("Assault_script_7.scar") => call to the main body (this file)
+-- function InitParameters_Easy() => contains settings for Easy level
+-- function InitParameters_Standard() => contains settings for Standard level
+-- function InitParameters_Hard() => contains settings for Hard level
+-- function InitParameters_Advanced() => contains settings for Advanced level
+-- function InitParameters_Insane() => contains settings for Insane level
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                     Outils de verification de l'existence des entites                               ##
+-- ##                                                                                                                        ##
+-- ####################################################
+	
+-- initialisation des tracker pour entites
+function EGTracker_Init()
+	EGTracker_List={}
+end
+
+-- cree un groupe pour le suivi specifique d'une entite, genere une erreur si on double l'appel
+function EGTracker_Add(EntityID)
+	EGTracker_List[EntityID.id]=EGroup_Create("eg_tracker_" .. EntityID.id)
+	EGroup_Add(EGTracker_List[EntityID.id], EntityID)
+end
+
+-- permet de tester si une entite existe et est suivie (false dans tous les autres cas)
+-- le groupe de suivi est detruit si il est vide
+function EGTracker_IsAlive(EntityID)
+	local retvalue=false
+	if EntityID == nil then
+		retvalue=false
+	elseif EntityID.id == nil then
+		retvalue=false
+	elseif EGTracker_List[EntityID.id]==nil then
+		retvalue=false
+	else
+		retvalue=(EGroup_Count(EGTracker_List[EntityID.id])>0)
+		if not retvalue then 
+			EGroup_Destroy(EGTracker_List[EntityID.id]) 
+			EGTracker_List[EntityID.id]=nil
+		end
+	end
+	return retvalue
+end
+
+
+
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                      Initialisation des zones                                                 ##
+-- ##                                                                                                                        ##
+-- ####################################################
+
+-- outils pour determiner le bp d'un squad attaché, renvoi nil si il n'y en a pas
+-- cree l'item de gestion au passage avec un timer à -1
+function GetAttachBluePrint(SquadID)
+
+	local BP="vide"
+	local HasAttach=false
+	
+	for GroupIndex,AttachGroup in pairs(Rule_Attach_Groups) do
+		
+		if AttachGroup.sgName==nil then
+			print("Warning: sgName is not defined in Rule_Attach_Groups - skiping")
+		elseif not SGroup_Exists(AttachGroup.sgName) then
+			print("Warning: " .. AttachGroup.sgName .. "does not exist in map - skiping")
+		elseif SGroup_ContainsSquad(AttachGroup.sgName,SquadID) then
+			--print("Squad " .. SquadID.id .. "Has attachement=" .. AttachGroup.BluePrint)
+			BP=AttachGroup.BluePrint
+			HasAttach=true
+			break
+		end
+	end
+
+	if HasAttach then
+		Attach_List[SquadID.id]={
+			AttachID=SquadID,
+			BluePrint=BP,
+			WaitCycles=-1
+		}
+		return BP
+	end	
+end
+
+-- Initialisation de la regle de Reparation des buildings 
+function Init_Repair_AllZone()
+
+	print("Init Repair Rules started")
+
+	-- Constantes globales
+	SQUADSTATEID_Repair=14
+	
+	-- Groupes globaux
+	sg_Repair_Order_ID = SGroup_Create( "sg_Repair_Order" )
+	sg_Repair_Iddle_ID = SGroup_Create( "sg_Repair_Iddle" )
+	sg_Repair_Resur_ID = SGroup_Create( "sg_Repair_Resur" )
+	sg_Repair_Recover_ID= SGroup_Create( "sg_Repair_Recover" )
+	sg_Repair_Fill_ID=SGroup_Create( "sg_Repair_Fill" )
+	sg_Repair_All_Ennemies_ID=SGroup_Create("sg_Repair_All_Ennemies")
+	sg_Attach_Leader_ID=SGroup_Create("sg_Attach_Leader")
+	sg_Attach_Squad_ID=SGroup_Create("sg_Attach_Squad")
+	
+	eg_Repair_List_ID = EGroup_Create( "eg_Repair_List" )
+	eg_Repair_Order_ID = EGroup_Create( "eg_Repair_Order" )
+	eg_Repair_Enter_ID = EGroup_Create( "eg_Repair_Enter" )
+	eg_Repair_Filled_ID=EGroup_Create("eg_Repair_Filled")
+	eg_Repair_ToBeFilled_ID=EGroup_CreateIfNotFound("eg_Repair_ToBeFilled")
+
+	--Tables globales
+	RepairZone_List={}
+	Attach_List={}
+	
+	-- Initialisation des zones
+	local n_Repair_Rule=0
+	while Marker_Exists( "mk_Repair_DefPos_" .. n_Repair_Rule+1, "basic_marker") do 
+		
+		n_Repair_Rule=n_Repair_Rule+1
+		print("Init. Zone nbr " .. n_Repair_Rule)
+		
+		local UIWarning_Text="Error in Zone ".. n_Repair_Rule
+		local Init_ErrMsg=false
+		for i,S_Name in pairs({"sg_Repair_", "sg_Repair_Defend_",  "sg_Repair_Recover_", "sg_Repair_Attack_"}) do
+			if not SGroup_Exists(S_Name .. n_Repair_Rule ) then 
+				UIWarning_Text=UIWarning_Text .. "\n ERROR : NO SGROUP " .. S_Name .. n_Repair_Rule 
+				Init_ErrMsg=true
+			end
+		end
+		
+		for i,E_Name in pairs({"eg_Repair_Rebuild_", "eg_Repair_Ctrl_"}) do
+			if not EGroup_Exists(E_Name .. n_Repair_Rule ) then 
+				UIWarning_Text=UIWarning_Text .. "\n ERROR : NO EGROUP " .. E_Name .. n_Repair_Rule 
+				Init_ErrMsg=true
+			end
+		end
+		
+		for i,M_Name in pairs({"mk_Repair_Resur_"}) do
+			if not Marker_Exists(M_Name .. n_Repair_Rule,"basic_marker" ) then 
+				UIWarning_Text=UIWarning_Text .. "\n ERROR : NO MARKER " .. M_Name .. n_Repair_Rule
+				Init_ErrMsg=true
+			end
+		end
+		
+		if Init_ErrMsg then
+			print(UIWarning_Text)
+			UIWarning_Show(UIWarning_Text)
+		end
+		
+		RepairZone_List[n_Repair_Rule]={}
+		
+		RepairZone_List[n_Repair_Rule].eg_Ctrl="eg_Repair_Ctrl_" .. n_Repair_Rule
+		RepairZone_List[n_Repair_Rule].eg_Ctrl_ID=EGroup_FromName( "eg_Repair_Ctrl_" .. n_Repair_Rule)
+		
+		RepairZone_List[n_Repair_Rule].eg_Recover= "eg_Repair_Recover_" .. n_Repair_Rule
+		RepairZone_List[n_Repair_Rule].eg_Recover_ID=EGroup_FromName( "eg_Repair_Recover_" .. n_Repair_Rule)
+		
+		-- ajoute les markers pour la zone
+		RepairZone_List[n_Repair_Rule].mk_DefPos="mk_Repair_DefPos_" .. n_Repair_Rule
+		RepairZone_List[n_Repair_Rule].mk_Resur="mk_Repair_Resur_" .. n_Repair_Rule
+		
+		--capture les points de la zone
+		EGroup_SetPlayerOwner( RepairZone_List[n_Repair_Rule].eg_Ctrl, g_CPU )
+		EGroup_SetPlayerOwner( RepairZone_List[n_Repair_Rule].eg_Recover, g_CPU )
+		
+		-- entre les constructeur pour la zone
+		local sg_Repair_ID=SGroup_FromName("sg_Repair_".. n_Repair_Rule)
+		RepairZone_List[n_Repair_Rule].SqRepair_List={}
+		for i=1, SGroup_Count(sg_Repair_ID) do
+			RepairZone_List[n_Repair_Rule].SqRepair_List[i]= { 
+				SquadID = SGroup_GetSpawnedSquadAt(sg_Repair_ID,i),
+				TargetEntityID = nil,
+				}
+		end
+		--initialise la posture des constructeurs
+		Cmd_SetStance("sg_Repair_".. n_Repair_Rule,STANCE_CeaseFire)
+		
+		--entre les squads de defense pour la zone
+		local sg_Defend_ID=SGroup_FromName("sg_Repair_Defend_".. n_Repair_Rule)
+		Cmd_SetStance("sg_Repair_Defend_".. n_Repair_Rule,STANCE_StandGround)
+		RepairZone_List[n_Repair_Rule].SqDefend_List={}
+		for i=1, SGroup_Count(sg_Defend_ID) do
+			local SqDefendID=SGroup_GetSpawnedSquadAt(sg_Defend_ID,i)
+			RepairZone_List[n_Repair_Rule].SqDefend_List[i]= { 
+				SquadID = SqDefendID,
+				BluePrint = Squad_GetBlueprintName(SqDefendID),
+				Position = Squad_GetPosition(SqDefendID),
+				WaitCycles=Repair_Defend_InitWaitCycles,
+				AttachBluePrint=GetAttachBluePrint(SqDefendID)
+				}
+		end
+		
+		--entre les squads de reconquete pour la zone
+		local sg_Recover_ID=SGroup_FromName("sg_Repair_Recover_".. n_Repair_Rule)
+		Cmd_SetStance("sg_Repair_Recover_".. n_Repair_Rule,STANCE_StandGround)
+		RepairZone_List[n_Repair_Rule].SqRecover_List={}
+		local Attack_Center=SGroup_GetPosition(sg_Recover_ID)
+		for i=1, SGroup_Count(sg_Recover_ID) do
+			local SqRecoverID=SGroup_GetSpawnedSquadAt(sg_Recover_ID,i)
+			RepairZone_List[n_Repair_Rule].SqRecover_List[Squad_GetGameID(SqRecoverID)]= { 
+				SquadID = SqRecoverID,
+				BluePrint = Squad_GetBlueprintName(SqRecoverID),
+				Position = Squad_GetPosition(SqRecoverID),
+				WaitCycles=Repair_Recover_InitWaitCycles,
+				AttachBluePrint=GetAttachBluePrint(SqRecoverID)
+				}
+		end
+		
+		--entre les squads d'attaque pour la zone
+		local sg_Attack_ID=SGroup_FromName("sg_Repair_Attack_".. n_Repair_Rule)
+		Cmd_SetStance("sg_Repair_Recover_".. n_Repair_Rule,STANCE_Attack)
+		RepairZone_List[n_Repair_Rule].SqAttack_List={}
+		RepairZone_List[n_Repair_Rule].SqAttack_SGroup="sg_Repair_Attack_".. n_Repair_Rule
+		RepairZone_List[n_Repair_Rule].SqAttack_SGroupID=sg_Attack_ID
+		RepairZone_List[n_Repair_Rule].SqAttack_WaitCycles=Repair_Attack_InitWaitCycles
+		RepairZone_List[n_Repair_Rule].SqAttack_Spawned=false
+		for i=1, SGroup_Count(sg_Attack_ID) do
+			local SqAttackID=SGroup_GetSpawnedSquadAt(sg_Attack_ID,i)
+			RepairZone_List[n_Repair_Rule].SqAttack_List[i]= { 
+				BluePrint = Squad_GetBlueprintName(SqAttackID),
+				Position = Squad_GetPosition(SqAttackID),
+				AttachBluePrint=GetAttachBluePrint(SqAttackID)
+				}
+		end
+		SGroup_DeSpawn("sg_Repair_Attack_".. n_Repair_Rule)
+		
+		-- entre les entites reconstructibles pour la zone et ajoute un tracker sur chacune
+		local eg_Repair_Rebuild_ID=EGroup_FromName("eg_Repair_Rebuild_".. n_Repair_Rule)
+		RepairZone_List[n_Repair_Rule].Entity_List={}
+		for i=1, EGroup_Count(eg_Repair_Rebuild_ID) do
+			local tmp_Entity_ID=EGroup_GetSpawnedEntityAt(eg_Repair_Rebuild_ID,i)
+			EGTracker_Add(tmp_Entity_ID)
+			RepairZone_List[n_Repair_Rule].Entity_List[Entity_GetGameID(tmp_Entity_ID)]= { 
+				EntityID = tmp_Entity_ID,
+				BluePrint = Entity_GetBlueprintName(tmp_Entity_ID),
+				Position = Entity_GetPosition( tmp_Entity_ID ),
+				WaitCycles = Repair_Entity_InitWaitCycles,
+				UnderRepair = false,
+				ToBeFilled = EGroup_ContainsEntity(eg_Repair_ToBeFilled_ID,tmp_Entity_ID)
+				}
+		end
+		
+		-- construit un listening point pour tous les objectifs de controle et ajoute un tracker
+		-- le point strategique doit etre dans la liste eg_Repair_ToBeFilled pour qu'il soit remplis automatiquement
+		local eg_Repair_Ctrl_ID=EGroup_FromName("eg_Repair_Ctrl_".. n_Repair_Rule)
+		for i=1, EGroup_Count(eg_Repair_Ctrl_ID) do
+			local New_Entity_ID=Entity_Create(Repair_ListeningPost_Entity,g_CPU,Entity_GetPosition(EGroup_GetSpawnedEntityAt(eg_Repair_Ctrl_ID,i)))
+			Entity_Spawn(New_Entity_ID)
+			EGTracker_Add(New_Entity_ID)
+			Entity_SetFullCap(New_Entity_ID)
+			RepairZone_List[n_Repair_Rule].Entity_List[Entity_GetGameID(New_Entity_ID)]= { 
+				EntityID = New_Entity_ID,
+				BluePrint = Entity_GetBlueprintName(New_Entity_ID),
+				Position = Entity_GetPosition(New_Entity_ID),
+				Rebuild = true,
+				WaitCycles=Repair_Entity_InitWaitCycles,
+				UnderRepair = false,
+				RelatedPointID=EGroup_GetSpawnedEntityAt(eg_Repair_Ctrl_ID,i),
+				}
+		end
+		
+	end
+end
+
+-- Initialisation des regles d'upgrade des squads
+function Init_Upgrade_AllSquads()
+
+	sg_Upgrade_Order_ID=SGroup_Create("sg_Upgrade_Order")
+
+end
+
+-- Lance les rules de gestion automatique
+function Start_Rules()
+
+	Rule_AddInterval( Rule_Repair_AllZone , Rule_Repair_AllZone_Interval )
+
+	Rule_AddInterval( Rule_Rebuild_AllZone , Rule_Rebuild_AllZone_Interval )
+
+	Rule_AddInterval( Rule_Defend_AllZone , Rule_Defend_AllZone_Interval )
+
+	Rule_AddInterval( Rule_Recover_AllZone , Rule_Recover_AllZone_Interval )
+
+	Rule_AddInterval( Rule_Attack_AllZone , Rule_Attack_AllZone_Interval )
+
+	Rule_AddInterval( Rule_Attach_Units , Rule_Attach_Units_Interval )
+	
+	Rule_Fill_AllEntities_Ctr=Rule_Fill_AllEntities_InitWaitCycles
+	Rule_AddInterval( Rule_Fill_AllEntities , Rule_Fill_AllEntities_Interval )
+
+	Rule_Upgrade_AllSquads_Ctr=Rule_Upgrade_AllSquads_InitWaitCycles
+	Rule_AddInterval( Rule_Upgrade_AllSquads , Rule_Upgrade_AllSquads_Interval )
+
+end
+
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                Regles de comportement des zones                                         ##
+-- ##                                                                                                                        ##
+-- ####################################################
+
+-- Regle de Reparation des buildings 
+function Rule_Repair_AllZone()
+	
+	-- passe toutes les zones en revue
+	for RepairZone_Index, RepairZone in ipairs(RepairZone_List) do
+		
+		-- si la zone est operationnelle alors pilote les constructeurs
+		if  EGroup_IsCapturedByPlayer( RepairZone.eg_Ctrl, g_CPU, false ) then
+			
+			-- initialise le compteur des constructeurs iddle
+			SGroup_Clear(sg_Repair_Iddle_ID)
+			
+			-- balaye le groupe de constructeur pour detecter les morts
+			-- elimine les entites en reparation de la liste des entites potentielles
+			-- recupere un constructeur disponible si il y en a
+			for RepairSquad_Index, RepairSquad in ipairs(RepairZone.SqRepair_List) do
+				
+				-- teste si le constructeur est mort
+				if not Squad_Exists(RepairSquad.SquadID.id) then
+					
+					-- si l'entite en cours de reparation existe alors la redeclare sans reparateur
+					if EGTracker_IsAlive(RepairSquad.TargetEntityID) then
+						RepairZone.Entity_List[Entity_GetGameID(RepairSquad.TargetEntityID)].UnderRepair = false
+					end
+					
+					-- recree le constructeur au point de creation et l'affecte a sg_Repair_Resur
+					SGroup_Clear (sg_Repair_Resur_ID )
+					Util_CreateSquadsAtMarker(g_CPU, "sg_Repair_Resur", Repair_Constructor_Unit, RepairZone.mk_Resur, 1)
+					
+					-- si la creation a reussi, affecte le constructeur comme disponible, sinon on vera a la prochaine passe de la rule
+					if SGroup_Count(sg_Repair_Resur_ID)>0 then
+						-- verrouille le constructeur vis à vis du CPU
+						--Cpu_LockSGroup(g_CPU, "sg_Repair_Resur")
+						-- passe le constructeur en mode passif
+						Cmd_SetStance("sg_Repair_Resur",STANCE_CeaseFire)
+						-- affecte les parametres scripts constructeur 
+						RepairSquad.SquadID=SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1)
+						RepairSquad.TargetEntityID=nil
+						--ajoute le constructeur au compteur des constructeurs disponibles
+						SGroup_Add(sg_Repair_Iddle_ID,RepairSquad.SquadID)
+					end
+					
+				-- teste si le constructeur n'est pas en cours de reparation / construction sur une entite existante => disponible
+				elseif  ( not EGTracker_IsAlive(RepairSquad.TargetEntityID) ) or
+						( ( Squad_GetActiveCommand( RepairSquad.SquadID ) ~= SQUADSTATEID_Repair ) and 
+						( Squad_GetActiveCommand( RepairSquad.SquadID ) ~= SQUADSTATEID_Construction ) ) then
+					
+					-- le constructeur etait auparavant en mode reparation / construction
+					if RepairSquad.TargetEntityID ~= nil  then 
+						
+						-- si l'entite en cours de reparation existe alors la redeclare sans reparateur
+						if EGTracker_IsAlive(RepairSquad.TargetEntityID) then
+							RepairZone.Entity_List[Entity_GetGameID(RepairSquad.TargetEntityID)].UnderRepair = false
+						end
+						
+						-- reinitialise le statut du repair squad
+						RepairSquad.TargetEntityID = nil 
+						
+					end
+					--ajoute le constructeur au compteur des constructeurs disponibles
+					SGroup_Add(sg_Repair_Iddle_ID,RepairSquad.SquadID)
+				end
+			end
+			
+			-- Recupere l'entite la plus endommagée dans la liste tronquee de celles en reparation
+			MaxDmg_Value=0
+			-- Teste toutes les entites de la zone
+			for ReBuild_Key, Rebuild_Entity in pairs(RepairZone.Entity_List) do
+				if EGTracker_IsAlive(Rebuild_Entity.EntityID) then
+					if ( (Entity_GetHealthMax(Rebuild_Entity.EntityID)-Entity_GetHealth(Rebuild_Entity.EntityID))>MaxDmg_Value ) and (not Rebuild_Entity.UnderRepair) then
+						MaxDmg_Value=Entity_GetHealthMax(Rebuild_Entity.EntityID)-Entity_GetHealth(Rebuild_Entity.EntityID)
+						MaxDmg_EntityID=Rebuild_Entity.EntityID
+					end
+				end
+			end
+			
+			-- Lance le constructeurs le plus proche sur l'entite la plus abimee non en cours de reparation si il y en a 
+			if ( SGroup_Count(sg_Repair_Iddle_ID)>0 ) and ( MaxDmg_Value>0 ) then
+				
+				-- extrait le constructeur vivant et disponible le plus proche
+				local MinDistance = -1
+				local TmpDistance = 0
+				for RepairSquad_Index, RepairSquad in ipairs(RepairZone.SqRepair_List) do
+					if Squad_Exists(RepairSquad.SquadID.id) and (RepairSquad.TargetEntityID == nil) then
+						TmpDistance=World_DistancePointToPoint(Entity_GetPosition(MaxDmg_EntityID), Squad_GetPosition(RepairSquad.SquadID))
+						if  (MinDistance<0) or (MinDistance>TmpDistance) then 
+							Available_RepairSquad=RepairSquad
+							MinDistance=TmpDistance
+						end
+					end
+				end
+				
+				-- Ordre de reparation
+				SGroup_Clear( sg_Repair_Order_ID )
+				SGroup_Add( sg_Repair_Order_ID, Available_RepairSquad.SquadID)
+				EGroup_Clear ( eg_Repair_Order_ID )	
+				EGroup_Add ( eg_Repair_Order_ID, MaxDmg_EntityID )
+				if Entity_GetBuildingProgress(MaxDmg_EntityID)<1.0 then
+					Command_SquadEntity(g_CPU, sg_Repair_Order_ID, SCMD_BuildStructure,  eg_Repair_Order_ID)
+				else
+					Command_SquadEntity(g_CPU, sg_Repair_Order_ID, SCMD_Repair,  eg_Repair_Order_ID)
+				end
+				
+				-- Stocke l'entite en cours de reparation
+				Available_RepairSquad.TargetEntityID=MaxDmg_EntityID
+				
+				-- Stocke le fait que l'entite est en reparation
+				RepairZone.Entity_List[Entity_GetGameID(MaxDmg_EntityID)].UnderRepair=true
+				
+				-- Elimine le constructeur de la liste des constucteurs Iddle
+				SGroup_Remove( sg_Repair_Iddle_ID, Available_RepairSquad.SquadID )
+				
+			end
+			
+			-- Renvoie au centre tous les constructeurs qui ne font rien
+			if SGroup_Count( sg_Repair_Iddle_ID ) > 0 then
+				if not(Prox_AllSquadsNearMarker("sg_Repair_Iddle", RepairZone.mk_DefPos)) then
+					Cmd_MoveToMarker( "sg_Repair_Iddle", RepairZone.mk_DefPos)
+				end
+			end
+		end
+	end
+end
+
+-- Regle de reconstruction des buildings
+function Rule_Rebuild_AllZone()
+
+	-- teste toutes les zones
+	for RepairZone_Index, RepairZone in ipairs(RepairZone_List) do
+		
+		-- si la zone est operationnelle
+		if  EGroup_IsCapturedByPlayer( RepairZone.eg_Ctrl, g_CPU, false ) then
+			
+			-- Teste toutes les entites enregistrees de la zone
+			for ReBuild_Key, Rebuild_Entity in pairs(RepairZone.Entity_List) do
+				
+				-- Teste si l'entite est morte
+				if not EGTracker_IsAlive(Rebuild_Entity.EntityID) then
+					
+					-- verifie qu'il ne s'agit pas d'un point strategique en cours de prise
+					if Rebuild_Entity.RelatedPointID ~= nil then
+						if not Entity_IsCapturedByPlayer( Rebuild_Entity.RelatedPointID, g_CPU ) then
+							Rebuild_Entity.WaitCycles=Rebuild_Entity.WaitCycles+1
+						end
+					end
+					
+					-- Teste si on arrive au bout du délais d'attente avant reconstruction
+					if Rebuild_Entity.WaitCycles>0 then
+--						print(Rebuild_Entity.WaitCycles .. " remaining before rebuild of " .. Rebuild_Entity.BluePrint)
+						Rebuild_Entity.WaitCycles=Rebuild_Entity.WaitCycles-1
+					else
+						print("Rebuild Zone=" .. RepairZone_Index ..  " rebuild of " .. Rebuild_Entity.BluePrint .. "ReBuild_Key=" .. ReBuild_Key)
+						
+						local New_Entity_ID=Entity_Create(Rebuild_Entity.BluePrint,g_CPU,Rebuild_Entity.Position)
+						Entity_Spawn(New_Entity_ID)
+						Entity_SetFullCap(New_Entity_ID)
+						
+						Entity_ResetConstructionState(New_Entity_ID)
+						
+						EGTracker_Add(New_Entity_ID)
+						
+						RepairZone.Entity_List[Entity_GetGameID(New_Entity_ID)]= { 
+							EntityID = New_Entity_ID,
+							BluePrint = Entity_GetBlueprintName(New_Entity_ID),
+							Position = Entity_GetPosition(New_Entity_ID),
+							WaitCycles=Repair_Entity_InitWaitCycles,
+							RelatedPointID=Rebuild_Entity.RelatedPointID,
+							ToBeFilled = Rebuild_Entity.ToBeFilled
+							}
+						
+						-- ajoute a la liste de remplissage automatique si necessaire
+						if Rebuild_Entity.ToBeFilled then 
+							EGroup_Add(eg_Repair_ToBeFilled_ID,New_Entity_ID)
+						end
+						
+						-- suppression de la table d'entite de l'ancienne table
+						RepairZone.Entity_List[ReBuild_Key]=nil
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Regle de resurection des defenseurs
+function Rule_Defend_AllZone()
+
+	SGroup_Clear(sg_Repair_All_Ennemies_ID)
+	-- Recupere tous les ennemis du CPU
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_GetTeam(g_CPU) ~= Player_GetTeam( World_GetPlayerAt(i) ) then
+			Player_AddSquadsToSGroup( World_GetPlayerAt(i), "sg_Repair_All_Ennemies")
+		end
+	end
+
+	-- passe toutes les zones en revue
+	for RepairZone_Index, RepairZone in ipairs(RepairZone_List) do
+		
+		-- balaye les squads de defense
+		for DefendSquad_Index, DefendSquad in pairs(RepairZone.SqDefend_List) do
+			
+			-- teste si le squad est mort
+			if not Squad_Exists(DefendSquad.SquadID.id) then
+				
+				-- si la zone est operationnelle alors resurection du defenseur
+				if  EGroup_IsCapturedByPlayer( RepairZone.eg_Ctrl, g_CPU, false ) then
+					
+					if DefendSquad.WaitCycles >0 then
+						DefendSquad.WaitCycles=DefendSquad.WaitCycles-1
+					else
+						-- recree l'unite au point de creation et l'affecte a sg_Repair_Resur
+						SGroup_Clear (sg_Repair_Resur_ID )
+						Util_CreateSquadsAtMarker(g_CPU, "sg_Repair_Resur", DefendSquad.BluePrint, RepairZone.mk_Resur, 1)
+						
+						-- si la creation a reussi, donne les ordres
+						if SGroup_Count(sg_Repair_Resur_ID)>0 then
+							
+							-- passe le squad en mode defense immobile
+							Cmd_SetStance("sg_Repair_Resur",STANCE_StandGround)
+							
+							-- restocke l'identite du squad
+							DefendSquad.SquadID=SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1)
+							DefendSquad.WaitCycles=Repair_Defend_InitWaitCycles
+							DefendSquad.IsEntrenched=false
+							
+							--relance l'attachement
+							if DefendSquad.AttachBluePrint~=nil then
+								Attach_List[Squad_GetGameID(SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1))]={
+									AttachID=SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1),
+									BluePrint=DefendSquad.AttachBluePrint,
+									WaitCycles=-1,
+								}
+							end
+						end
+					end
+				end
+				
+			-- le squad est vivant
+			else
+				local Squad_Command=Squad_GetActiveCommand(DefendSquad.SquadID)
+				local pos_error=World_DistancePointToPoint( Squad_GetPosition(DefendSquad.SquadID), DefendSquad.Position)
+				
+				SGroup_Clear (sg_Repair_Resur_ID )
+				SGroup_Add(sg_Repair_Resur_ID,DefendSquad.SquadID)
+				
+				-- si le squad est despawned => c'est un squad qui vient de Entreched ou Uproot => bascule le squadID
+				if SGroup_CountSpawned(sg_Repair_Resur_ID)==0 then
+					
+					local sqpos=Squad_GetPositionDeSpawned(DefendSquad.SquadID)
+					
+					SGroup_Clear (sg_Repair_Resur_ID )
+					Player_GetAllSquadsNearPos( g_CPU, "sg_Repair_Resur", sqpos, 0.05)
+					
+					if SGroup_CountSpawned(sg_Repair_Resur_ID)>0 then
+						DefendSquad.SquadID=SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1)
+					else
+						print("WARNING: ASSOCIATED SPAWNED SQUAD NOT FOUND")
+					end
+					
+				-- si le squad peut se retrancher et ( est a sa position ou voit des ennemis )=> entrench
+				elseif Rule_Defend_AllZone_CanEntrench[Squad_GetBlueprintName(DefendSquad.SquadID)]==true then
+					if (pos_error<Rule_Defend_AllZone_Precision) or SGroup_CanSeeSGroup("sg_Repair_Resur","sg_Repair_All_Ennemies",false) then
+						--print("Squad=" .. DefendSquad.SquadID.id .. " entrench, dist=" .. pos_error)
+						Cmd_SquadEntrench("sg_Repair_Resur")
+					else
+						if Squad_Command == SQUADSTATEID_Idle then
+							Command_SquadPos(g_CPU, sg_Repair_Resur_ID, SCMD_AttackMove, DefendSquad.Position )
+						end
+					end
+					
+				-- si le squad est retranché, ne voit pas d'ennemis et pas à la bonne place => uproot
+				elseif Rule_Defend_AllZone_CanUpRoot[Squad_GetBlueprintName(DefendSquad.SquadID)]==true then
+					if pos_error>Rule_Defend_AllZone_Precision then
+						if not SGroup_CanSeeSGroup("sg_Repair_Resur","sg_Repair_All_Ennemies",false) then
+							--print("Squad=" .. DefendSquad.SquadID.id .. " uproot, dist=" .. pos_error)
+							Cmd_SquadUproot("sg_Repair_Resur")
+						end
+					end
+					
+				-- si le squad est normal
+				else
+					if Squad_Command == SQUADSTATEID_Idle then
+						if pos_error>Rule_Defend_AllZone_Precision then
+							Command_SquadPos(g_CPU, sg_Repair_Resur_ID, SCMD_AttackMove, DefendSquad.Position )
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Regle de recapture des zones
+function Rule_Recover_AllZone()
+
+	-- passe toutes les zones en revue
+	for RepairZone_Index, RepairZone in ipairs(RepairZone_List) do
+		
+		-- si la zone de recuperation est operationnelle alors resurection des reprenneurs
+		if  EGroup_IsCapturedByPlayer( RepairZone.eg_Recover, g_CPU, false ) then
+
+			-- initialise le groupe des captureurs disponibles
+			SGroup_Clear(sg_Repair_Iddle_ID)
+			
+			-- initialise les strats point capturables
+			EGroup_Clear(eg_Repair_List_ID)
+			for i=1, (EGroup_Count(RepairZone.eg_Ctrl_ID)) do
+				local StratID=EGroup_GetSpawnedEntityAt(RepairZone.eg_Ctrl_ID,i)
+				if not (Entity_IsCapturedByPlayer(StratID, g_CPU) or Entity_StrategicPointHasStructure(StratID)) then
+					EGroup_Add(eg_Repair_List_ID,StratID)
+				end
+			end
+			
+			-- resurection des squads et detection des squads disponibles
+			for RecoverSquad_GameID, RecoverSquad in pairs(RepairZone.SqRecover_List) do
+				
+				-- teste si le squad est mort
+				if not Squad_Exists(RecoverSquad.SquadID.id) then
+					
+					if RecoverSquad.WaitCycles >0 then
+						RecoverSquad.WaitCycles=RecoverSquad.WaitCycles-1
+					else
+						
+						print("Recover Zone=" .. RepairZone_Index ..  " resurection squad recuperation")
+
+						-- recree le squad au point de creation et l'affecte a sg_Repair_Resur
+						SGroup_Clear (sg_Repair_Resur_ID )
+						Util_CreateSquadsAtMarker(g_CPU, "sg_Repair_Resur", RecoverSquad.BluePrint, RepairZone.mk_Resur, 1)
+						
+						-- si la creation a reussi, donne les ordres
+						if SGroup_Count(sg_Repair_Resur_ID)>0 then
+						
+							-- verrouille le squad vis à vis du CPU
+							--Cpu_LockSGroup(g_CPU, "sg_Repair_Resur")
+							
+							-- passe le squad en mode defense immobile
+							Cmd_SetStance("sg_Repair_Resur",STANCE_StandGround)
+							
+							-- restocke l'identite du squad
+							RepairZone.SqRecover_List[Squad_GetGameID(SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1))]= 
+							{ 
+								SquadID = SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1),
+								BluePrint = RecoverSquad.BluePrint,
+								Position = RecoverSquad.Position,
+								WaitCycles=Repair_Recover_InitWaitCycles,
+								TargetID=nil
+							}
+							
+							--relance l'attachement
+							if RecoverSquad.AttachBluePrint~=nil then
+								Attach_List[Squad_GetGameID(SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1))]={
+									AttachID=SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1),
+									BluePrint=RecoverSquad.AttachBluePrint,
+									WaitCycles=-1,
+								}
+							end
+
+							-- declare le squad iddle
+							SGroup_Add(sg_Repair_Iddle_ID,SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1))
+							
+							-- detruit l'ancienne reference au squad
+							RepairZone.SqRecover_List[RecoverSquad_GameID]=nil
+							
+						end
+					end
+				
+				-- le squad essaye  de prendre un point strategique
+				elseif  ( RecoverSquad.TargetID ~= nil )   then
+				
+					print("Recover Zone=" .. RepairZone_Index ..  " fin de recapture")
+				
+					-- si le squad n'est pas en train de capturer, on libere le squad et on l'ajoute aux iddle
+					if Squad_GetActiveCommand( RecoverSquad.SquadID ) ~= SCMD_Capture then
+						RecoverSquad.TargetID=nil
+						SGroup_Add(sg_Repair_Iddle_ID, RecoverSquad.SquadID)
+					-- on enleve le strat point de la liste des points à recuperer
+					else
+					
+					end
+					
+				else
+					SGroup_Add(sg_Repair_Iddle_ID, RecoverSquad.SquadID)
+				end
+			end
+			
+			-- si il y a des points a capturer et si il y a des unites disponibles
+			if (EGroup_Count(eg_Repair_List_ID)>0) and (SGroup_Count(sg_Repair_Iddle_ID)>0) then
+			
+				--print("Recover Zone=" .. RepairZone_Index ..  " Ordre de recapture")
+			
+				for i=math.min(EGroup_Count(eg_Repair_List_ID), SGroup_Count(sg_Repair_Iddle_ID)), 1, -1 do
+				
+					SGroup_Clear( sg_Repair_Order_ID )
+					SGroup_Add( sg_Repair_Order_ID, SGroup_GetSpawnedSquadAt(sg_Repair_Iddle_ID,i) )
+					EGroup_Clear ( eg_Repair_Order_ID )	
+					EGroup_Add ( eg_Repair_Order_ID, EGroup_GetSpawnedEntityAt(eg_Repair_List_ID,i) )
+				
+					-- Ordre de capture
+					Command_SquadEntity(g_CPU, sg_Repair_Order_ID, SCMD_Capture,  eg_Repair_Order_ID)
+					
+					print("Recover Zone=" .. RepairZone_Index ..  " Ordre recapture")
+					
+					-- Stocke l'entite en cours de capture
+					RepairZone.SqRecover_List[Squad_GetGameID(SGroup_GetSpawnedSquadAt(sg_Repair_Iddle_ID,i))].TargetID=
+						EGroup_GetSpawnedEntityAt(eg_Repair_List_ID,i)
+					
+					-- Elimine le squad de la liste des squad Iddle
+					SGroup_Remove( sg_Repair_Iddle_ID, SGroup_GetSpawnedSquadAt(sg_Repair_Iddle_ID,i) )
+					
+				end
+			end
+			
+			-- Renvoie au centre tous les squads qui ne font rien
+			if SGroup_Count( sg_Repair_Iddle_ID ) > 0 then
+				if not(Prox_AllSquadsNearMarker("sg_Repair_Iddle", RepairZone.mk_DefPos)) then
+					Cmd_MoveToMarker( "sg_Repair_Iddle", RepairZone.mk_DefPos)
+				end
+			end
+			
+		end
+	end
+end
+
+-- Regle de contre-attaque des zones capturees
+function Rule_Attack_AllZone()
+
+	-- passe toutes les zones en revue
+	for RepairZone_Index, RepairZone in ipairs(RepairZone_List) do
+	
+		-- teste si la zone de recuperation est operationnelle 
+		if  EGroup_IsCapturedByPlayer( RepairZone.eg_Recover, g_CPU, false ) then
+			
+			-- si la zone d'attaque n'est pas completement operationnelle
+			if  not EGroup_IsCapturedByPlayer( RepairZone.eg_Ctrl, g_CPU, true ) then
+
+				-- le compteur n'est pas à 0: en attente de l'attaque
+				if RepairZone.SqAttack_WaitCycles > 0 then
+					-- decremente le compteur
+					RepairZone.SqAttack_WaitCycles=RepairZone.SqAttack_WaitCycles-1
+				-- le compteur est négatif et le squad est mort : l'attaque a rate
+				elseif (RepairZone.SqAttack_WaitCycles < 0) and (SGroup_Count(RepairZone.SqAttack_SGroupID)==0) then
+					
+					print("AttackZone=" .. RepairZone_Index .. " Attack aborted - squad lost")
+					RepairZone.SqAttack_WaitCycles=Repair_Attack_InitWaitCycles
+					
+				-- le compteur est a zero / ou negatif : creation/spawn et ordre d'assaut pour toutes les unités iddle
+				else
+					-- Spawn
+					if not RepairZone.SqAttack_Spawned then
+						print("AttackZone=" .. RepairZone_Index .. " Spawning attack")
+						SGroup_ReSpawn( RepairZone.SqAttack_SGroup )
+						RepairZone.SqAttack_Spawned = true
+						-- Passe le compteur en attaque lancée
+						RepairZone.SqAttack_WaitCycles=-1
+					end
+					
+					-- Recreation si groupe mort
+					if SGroup_Count(RepairZone.SqAttack_SGroupID)==0 then
+						
+						print("AttackZone=" .. RepairZone_Index .. " Creating attack")
+						
+						-- tentative de creation de toutes les unites
+						for Squad_Index, Squad in ipairs(RepairZone.SqAttack_List) do
+							
+							SGroup_Clear(sg_Repair_Resur_ID)
+							
+							Util_CreateSquadsAtPosition(g_CPU, "sg_Repair_Resur", Squad.BluePrint, Squad.Position , 1)
+							
+							if SGroup_Count(sg_Repair_Resur_ID)>0 then
+								
+								local SquadID=SGroup_GetSpawnedSquadAt(sg_Repair_Resur_ID,1)
+								
+								SGroup_Add( RepairZone.SqAttack_SGroupID, SquadID)
+								
+								--relance l'attachement
+								if Squad.AttachBluePrint~=nil then
+									Attach_List[Squad_GetGameID(SquadID)]={
+										AttachID=SquadID,
+										BluePrint=Squad.AttachBluePrint,
+										WaitCycles=-1
+									}
+								end
+							end
+						end
+						
+						-- si la creation a reussi, donne les ordres
+						if SGroup_Count(RepairZone.SqAttack_SGroupID)>0 then
+							print("AttackZone=" .. RepairZone_Index .. " Attack size=" .. SGroup_Count(RepairZone.SqAttack_SGroupID))
+							-- passe le squad en mode attaque
+							Cmd_SetStance(RepairZone.SqAttack_SGroup,STANCE_Attack)
+							-- Passe le compteur en attaque lancée
+							RepairZone.SqAttack_WaitCycles=-1
+							
+						end
+						
+					end
+			
+					-- recherche toutes les entites qui n'ont pas d'ordre et leur donne l'ordre d'attaquer la position du marqueur
+					SGroup_Clear(sg_Repair_Order_ID)
+					if SGroup_Count(RepairZone.SqAttack_SGroupID)>0 then
+						for i=1, SGroup_Count(RepairZone.SqAttack_SGroupID) do
+							local Squad_Command=Squad_GetActiveCommand(SGroup_GetSpawnedSquadAt(RepairZone.SqAttack_SGroupID,i))
+							if Squad_Command == SQUADSTATEID_Idle then 
+								SGroup_Add(sg_Repair_Order_ID, SGroup_GetSpawnedSquadAt(RepairZone.SqAttack_SGroupID,i))
+							end
+						end
+						if SGroup_Count(sg_Repair_Order_ID)>0 then
+							print("AttackZone=" .. RepairZone_Index .. " Attack order units=" .. SGroup_Count(sg_Repair_Order_ID))
+							-- Attaque le marker ou se regroupe les constructeurs
+							Command_SquadPos(g_CPU, sg_Repair_Order_ID, SCMD_AttackMove, Marker_GetPosition( Marker_FromName( RepairZone.mk_DefPos, "basic_marker")) )
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+-- Regle de remplissage des entites (barraquements)
+function Rule_Fill_AllEntities()
+
+	Rule_Fill_AllEntities_Ctr=Rule_Fill_AllEntities_Ctr-1
+	if Rule_Fill_AllEntities_Ctr<=0 then
+		Rule_Fill_AllEntities_Ctr=Rule_Fill_AllEntities_InitWaitCycles
+		
+		EGroup_Clear(eg_Repair_Filled_ID)
+		
+		for i=1, EGroup_Count(eg_Repair_ToBeFilled_ID) do
+			
+			local Fill_Entity_ID=EGroup_GetSpawnedEntityAt(eg_Repair_ToBeFilled_ID,i)
+			
+			--print( "Entite a remplir=" .. Entity_GetGameID(Fill_Entity_ID) )
+			
+			-- teste si l'entite est construite
+			if Entity_GetBuildingProgress(Fill_Entity_ID)==1.0 then
+				
+				-- cree le groupe de building a remplir
+				EGroup_Clear(eg_Repair_Enter_ID)
+				EGroup_Add(eg_Repair_Enter_ID,Fill_Entity_ID)
+				
+				-- cree le squad de remplissage
+				SGroup_Clear(sg_Repair_Fill_ID)
+				sg_Repair_Fill_ID=Util_CreateSquadsAtPositionEx( g_CPU, "sg_Repair_Fill",Repair_Fill_Unit, Entity_GetPosition(Fill_Entity_ID),Rule_Fill_SquadNbr,Rule_Fill_SquadSize)
+				
+				--print("Created " .. SGroup_Count(sg_Repair_Fill_ID) .. " Squads")
+				
+				if SGroup_Count(sg_Repair_Fill_ID)>0 then
+					-- verrouille le squad vis à vis du CPU
+					--Cpu_LockSGroup(g_CPU, "sg_Repair_Fill")
+					-- passe le squad en mode defense
+					Cmd_SetStance("sg_Repair_Fill",STANCE_StandGround)
+					-- fait entrer le squad dans le building
+					Cmd_EnterBuilding("sg_Repair_Fill", "eg_Repair_Enter")
+					-- vide le building de la liste a remplir
+					EGroup_Add(eg_Repair_Filled_ID, Fill_Entity_ID)
+				end
+			end
+		end
+
+		-- enleve de la liste toutes les entites remplies
+		if EGroup_Count(eg_Repair_Filled_ID)>0 then
+			--print("Removing tobefilled =" .. EGroup_Count(eg_Repair_Filled_ID))
+			EGroup_RemoveGroup(eg_Repair_ToBeFilled_ID,eg_Repair_Filled_ID)
+		end
+	end
+end
+
+-- Regle pour les entites attachees
+function Rule_Attach_Units()
+
+	-- balaye les squads attaches
+	for AttachSquad_Index, AttachSquad in pairs(Attach_List) do
+		
+		-- le squad de rattachement est mort => on ejecte le squad de la table
+		if not Squad_Exists(AttachSquad.AttachID.id) then
+			
+			Attach_List[AttachSquad_Index]=nil
+			
+		-- le squad de rattachement possede un attache => on ne fait rien
+		elseif Squad_IsAttached(AttachSquad.AttachID) then
+			
+		-- le squad attache est mort et le squad de rattachement vivant et le compteur n'est pas a zero => on decompte
+		elseif AttachSquad.WaitCycles>0 then
+			
+			AttachSquad.WaitCycles=AttachSquad.WaitCycles-1
+			
+		-- le squad attache est mort et le squad de rattachement vivant et le compteur est a zero => on ajoute le leader
+		else
+			SGroup_Clear(sg_Attach_Squad_ID)
+			SGroup_Add(sg_Attach_Squad_ID, AttachSquad.AttachID)			
+			-- verifie que le squad n'est pas despawned
+			if SGroup_CountSpawned(sg_Attach_Squad_ID)>0 then
+				
+				-- recree l'unite la ou se trouve le squad de rattachement
+				SGroup_Clear (sg_Attach_Leader_ID )
+				--print("creating: "..AttachSquad.BluePrint .. " for squad " .. AttachSquad.AttachID.id)
+				Util_CreateSquadsAtPosition(g_CPU, "sg_Attach_Leader", AttachSquad.BluePrint, Squad_GetPosition(AttachSquad.AttachID), 1)
+				
+				-- si la creation a reussi, ordre de rattachement
+				if SGroup_Count(sg_Attach_Leader_ID)>0 then
+					-- passe le squad en mode attaque
+					Cmd_SetStance("sg_Attach_Leader",STANCE_Attack)
+					-- donne l'ordre d'attachement
+					Cmd_AttachSquads( "sg_Attach_Squad", "sg_Attach_Leader")
+					-- restaure le compteur
+					AttachSquad.WaitCycles=Rule_Attach_InitWaitCycles
+				end
+			end
+			
+		end
+		
+	end
+
+end
+-- Regle de retour a pleine capacité des squads
+function Rule_Upgrade_AllSquads()
+
+	Rule_Upgrade_AllSquads_Ctr=Rule_Upgrade_AllSquads_Ctr-1
+	if Rule_Upgrade_AllSquads_Ctr<=0 then
+		
+		Rule_Upgrade_AllSquads_Ctr=Rule_Upgrade_AllSquads_InitWaitCycles
+		
+		local function UpgradeSquad(groupid, itemindex, itemid)
+			
+			local UpgradeData=Squad_UpgradeData[Squad_GetBlueprintName(itemid)]
+			
+			if UpgradeData ~= nil then
+				
+				if not Squad_IsReinforcing(itemid) then
+					
+					if not Squad_HasLeader(itemid) then
+						
+						SGroup_Clear(sg_Upgrade_Order_ID)
+						SGroup_Add(sg_Upgrade_Order_ID,itemid)
+						Cmd_ReinforceLeader("sg_Upgrade_Order",1)
+						
+					elseif Squad_Count(itemid)<UpgradeData.maxsize then
+						
+						SGroup_Clear(sg_Upgrade_Order_ID)
+						SGroup_Add(sg_Upgrade_Order_ID,itemid)
+						Cmd_ReinforceTrooper("sg_Upgrade_Order",1)
+						
+					elseif UpgradeData.weapon ~= nil then
+						
+						for weapon_name, weapon_nbr in pairs(UpgradeData.weapon) do
+							
+							if Squad_WeaponCount( itemid, weapon_name) < weapon_nbr then
+								Squad_UpgradeWeapon(itemid,weapon_name)
+								break
+							end
+							
+						end
+					end
+				end
+				
+			end
+			
+			return true
+			
+		end
+		
+		-- applique la fonction a tous les squads
+		--sg_AllCPU_ID=Player_AddSquadsToSGroup( g_CPU, "sg_AllCPU" )
+		SGroup_ForEachAllOrAnyEx( sg_AllCPU_ID, true, UpgradeSquad, true, false )
+	end
+end
+
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                       Amelioration des entites / squad                                    ##
+-- ##                                                                                                                        ##
+-- ####################################################
+
+function Egroup_SetFullCap( eg_Tmp )
+	
+	local eg_Tmp_ID = EGroup_FromName(eg_Tmp)
+	for i=1, EGroup_Count(eg_Tmp_ID) do
+		Entity_SetFullCap(EGroup_GetSpawnedEntityAt( eg_Tmp_ID, i))
+	end
+end
+
+function Entity_SetFullCap(Entity_ID)
+
+	local Tmp_BluePrint = Entity_GetBlueprintName( Entity_ID )
+
+	if Entity_FullCapData[Tmp_BluePrint] ~= nil then
+		for addon_index, addon_name in pairs( Entity_FullCapData[Tmp_BluePrint] ) do
+			Entity_ForceAddOn( Entity_ID, addon_name)
+		end
+	end
+
+end
+
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                       Initialisation generale                                                  ##
+-- ##                                                                                                                        ##
+-- ####################################################
+
+-- Demarrage du script
+function OnInit()
+
+
+	-- Declaration de la version du code
+	print("===============================================")
+	print("  ")
+	print("              ASSAULT MAP SCAR CODE (DARK40K)")
+	print("                      " .. Assault_map_version)
+	print("  ")
+	print("==============================================")
+
+	-- Frame
+	Frame_nbr=0
+	Rule_Add(Rule_Frame)
+
+	-- Lance l'outils pour suivi des entites
+	EGTracker_Init()
+	
+	-- ================================================================================
+	-- 
+	--                                               Parametres partie
+	--
+	-- ================================================================================
+	
+	-- Recuperation des parametres généraux
+	Entity_FullCapData={}
+	Squad_UpgradeData={}
+
+	InitGeneralParameters()
+
+	-- Regle de reparation / regeneration constructeurs
+	Rule_Repair_AllZone_Interval = 1.0
+
+	-- Regle de reconstruction des entites detruites 
+	Rule_Rebuild_AllZone_Interval = 1.0
+	
+	-- Regle de regeneration des squads de defense
+	Rule_Defend_AllZone_Interval = 1.0
+	Rule_Defend_AllZone_Precision = 2.5
+	
+	-- Regle de reconquete des zones perdues
+	Rule_Recover_AllZone_Interval = 5.0
+	
+	-- Regle d'attaque des zones perdues
+	Rule_Attack_AllZone_Interval = 5.0
+
+	-- Regle de remplissage des entites (bunkers)
+	Rule_Fill_AllEntities_Interval = 5.0
+	
+	-- Regle d'upgrade / renforcement des escouades = 5s
+	Rule_Upgrade_AllSquads_Interval = 5.0
+	
+	-- Regle d'attachement
+	Rule_Attach_Units_Interval=1.0
+
+	-- Initialisation des variables globales
+	g_CPU = World_GetPlayerAt(World_GetPlayerCount()-1)
+	sg_AllCPU_ID=Player_GetSquads( g_CPU )
+	sg_AllCPU=SGroup_GetName(sg_AllCPU_ID)
+
+	-- ================================================================================
+	-- 
+	--                                               mode de test de la map
+	--
+	-- ================================================================================
+	-- Mode testmap
+	-- => Groupe pour test de la map (invulnerable), detruit si TestMapMode false
+	-- Supprime le brouillard si TestMapMode true
+
+	if TestMapMode==true then
+		
+		print "TESTMAPMODE IS ACTIVE"
+		
+		FOW_RevealAll()
+		
+		if SGroup_Exists("sg_Start_TestMap") then
+			SGroup_SetHealthInvulnerable("sg_Start_TestMap",true)
+			SGroup_SetMoraleInvulnerable("sg_Start_TestMap",true)
+		end
+		
+	else
+		if SGroup_Exists("sg_Start_TestMap") then
+			SGroup_Destroy(SGroup_FromName("sg_Start_TestMap"))
+		end
+	end
+
+	-- ================================================================================
+	-- 
+	--                       verification de la map et du niveau de la partie
+	--
+	-- ================================================================================
+
+	if TestMap() then
+		-- message principal
+		W40k_ShowSystemMessage("ERROR IN MAP DEF - SCAR NOT STARTED - SEE CONSOLE MESSAGES")
+		-- affiche toute la map
+		FOW_RevealAll()
+		-- Desactive les CPU
+		Cpu_EnableAll(false)
+		
+	elseif World_GetPlayerCount()==2 then
+		
+		level_CPU=Cpu_GetDifficulty(g_CPU)
+		
+		InitLevel(level_CPU)
+		
+	else
+		-- Desactive les CPU
+		Cpu_EnableAll(false)
+		
+		Level_Table={
+			[1]={level=AD_Easy, msg="Easy"},
+			[2]={level=AD_Standard, msg="Standard"},
+			[3]={level=AD_Hard, msg="Hard"},
+			[4]={level=AD_Advanced, msg="Advanced"},
+			[5]={level=AD_Insane, msg="Insane"}}
+		
+		Level_Set=1
+		
+		if not Marker_Exists("mk_SetLevel","basic_marker") then
+			print "Warning: mk_SetLevel marker not found, using standard level"
+			InitLevel(AD_Standard)
+		else
+			Rule_Level_Ctr=30
+			sg_LevelSet_ID=SGroup_Create("sg_LevelSet")
+			Util_CreateSquadsAtMarker(World_GetPlayerAt(0), "sg_LevelSet", "space_marine_squad_skull_probe", "mk_SetLevel", 1)
+			Rule_AddInterval(Rule_Level,1.0)
+		end
+		
+	end
+	
+end
+
+-- Regle permettant d'initiliser le niveau en multiplayer
+function Rule_Level()
+
+	if Rule_Level_Ctr==0 then
+	
+		W40k_HideSystemMessage(Level_Msg)
+		Level_Msg="Level=" .. Level_Table[Level_Set].msg .. " - LOCKED"
+		W40k_ShowSystemMessage(Level_Msg)
+		
+	elseif Rule_Level_Ctr<-5 then
+		
+		W40k_HideSystemMessage(Level_Msg)
+		Rule_Remove(Rule_Level)
+		
+		-- Reactive les CPU
+		Cpu_EnableAll(true)
+		
+		InitLevel(Level_Table[Level_Set].level)
+		
+	elseif Rule_Level_Ctr>0 then
+		
+		if Level_Msg~=nil then
+			W40k_HideSystemMessage(Level_Msg)
+		end
+		
+		Level_Msg="Level=" .. Level_Table[Level_Set].msg .. " - Player1 sacrifice probe to increase - Time=" .. Rule_Level_Ctr
+		W40k_ShowSystemMessage(Level_Msg)
+		
+		if (SGroup_Count(sg_LevelSet_ID)==0) and (Level_Set<5) then
+			Level_Set=Level_Set+1
+			if Level_Set<5 then
+				Util_CreateSquadsAtMarker(World_GetPlayerAt(0), "sg_LevelSet", "space_marine_squad_skull_probe", "mk_SetLevel", 1)
+			end
+		end
+		
+	end
+	
+	Rule_Level_Ctr=Rule_Level_Ctr-1
+	
+end
+
+
+-- Regle permettant une utilisation pour chaque frame
+function Rule_Frame()
+	Frame_nbr=Frame_nbr+1
+end
+
+
+-- Teste la compatibilite de la map
+function TestMap()
+
+	local n_Repair_Rule=0
+	local map_error=false
+	while Marker_Exists( "mk_Repair_DefPos_" .. n_Repair_Rule+1, "basic_marker") do 
+		
+		n_Repair_Rule=n_Repair_Rule+1
+		
+		for i,S_Name in pairs({"sg_Repair_", "sg_Repair_Defend_",  "sg_Repair_Recover_", "sg_Repair_Attack_"}) do
+			if not SGroup_Exists(S_Name .. n_Repair_Rule ) then 
+				print("MAP ERROR : NO SGROUP " .. S_Name .. n_Repair_Rule )
+				map_error=true
+			end
+		end
+		
+		for i,E_Name in pairs({"eg_Repair_Rebuild_"}) do
+			if not EGroup_Exists(E_Name .. n_Repair_Rule ) then 
+				print("MAP ERROR : NO EGROUP " .. E_Name .. n_Repair_Rule )
+				map_error=true
+			end
+		end
+		
+		for i,E_Name in pairs({"eg_Repair_Ctrl_", "eg_Repair_Recover_"}) do
+			if not EGroup_Exists(E_Name .. n_Repair_Rule ) then 
+				print("MAP ERROR : NO EGROUP " .. E_Name .. n_Repair_Rule )
+				map_error=true
+			elseif EGroup_Count(EGroup_FromName(E_Name .. n_Repair_Rule))==0 then
+				print("MAP ERROR : EGROUP EMPTY :" .. E_Name .. n_Repair_Rule )
+				map_error=true
+			else
+				for j=1, EGroup_Count(EGroup_FromName(E_Name .. n_Repair_Rule)) do
+					local EBP=Entity_GetBlueprintName(EGroup_GetSpawnedEntityAt(EGroup_FromName(E_Name .. n_Repair_Rule),j))
+					if EBP~="relic_struct" and EBP~="strategic_point_flag" then
+						print("MAP ERROR : EGROUP must contain only strategic points or relics :" .. E_Name .. n_Repair_Rule )
+						map_error=true
+					end
+				end
+			end
+		end
+		
+		for i,M_Name in pairs({"mk_Repair_Resur_"}) do
+			if not Marker_Exists(M_Name .. n_Repair_Rule,"basic_marker" ) then 
+				print("MAP ERROR : NO MARKER " .. M_Name .. n_Repair_Rule)
+				map_error=true
+			end
+		end
+		
+	end
+	
+	return map_error
+end
+
+-- Initialisation du niveau de la partie
+function InitLevel(GameLevel)
+
+
+	--recuperation des parametres de niveau
+	if GameLevel == AD_Easy then
+		InitParameters_Easy()
+	elseif GameLevel == AD_Standard then
+		InitParameters_Standard()
+	elseif GameLevel == AD_Hard  then
+		InitParameters_Hard()
+	elseif GameLevel == AD_Advanced then
+		InitParameters_Advanced()
+	elseif GameLevel == AD_Insane then
+		InitParameters_Insane()
+	else
+		print "Warning: level not found, using standard"
+		InitParameters_Single_Standard()
+	end
+	
+	-- Destruction des unites qui appartiennent a un autre level
+	for RemoveGroup_Index,RemoveGroup in pairs(Level_SGroup_Remove) do
+		if SGroup_Exists(RemoveGroup) then
+			SGroup_DestroyAllSquads(RemoveGroup)
+		else
+			print("WARNING: Level SGroup " .. RemoveGroup .. " to be destroyed not found")
+		end
+	end
+	for RemoveGroup_Index,RemoveGroup in pairs(Level_EGroup_Remove) do
+		if EGroup_Exists(RemoveGroup) then
+			EGroup_DestroyAllEntities(RemoveGroup)
+		else
+			print("WARNING: Level EGroup " .. RemoveGroup .. " to be destroyed not found")
+		end
+	end
+	
+	-- Desactive le CPU pour le defenseur
+	Cpu_Enable( g_CPU, false )
+	
+	-- Demarrage dans 1 seconde pour permettre la suppression des unites
+	Rule_AddOneShot(InitGame, 1.0)
+	
+end
+
+-- Initialisation de la partie
+function InitGame()
+	
+	-- ================================================================================
+	-- 
+	--                                               Initialisation
+	--
+	-- ================================================================================
+
+	-- Passe le CPU en full tech
+	for Research_Index, Reseach_Name in pairs(GrantResearch_List) do
+		Player_GrantResearch( g_CPU,  Reseach_Name)
+	end
+	
+	-- Upgrade automatique des batiments
+	if  EGroup_Exists("eg_SetFullTech") then Egroup_SetFullCap("eg_SetFullTech") end
+	
+	-- Groupe invulnerable
+	if  SGroup_Exists("sg_Start_Invulnerable") then SGroup_SetHealthInvulnerable("sg_Start_Invulnerable",true) end
+	
+	-- Initialisation du mode des unites
+	if  SGroup_Exists("sg_STANCE_Hold") then Cmd_SetStance("sg_STANCE_Hold",STANCE_Hold) end
+	if  SGroup_Exists("sg_STANCE_StandGround") then Cmd_SetStance("sg_STANCE_StandGround",STANCE_StandGround) end
+	if  SGroup_Exists("sg_STANCE_Burn") then Cmd_SetStance("sg_STANCE_Burn",STANCE_Burn) end
+	if  SGroup_Exists("sg_STANCE_CeaseFire") then Cmd_SetStance("sg_STANCE_CeaseFire",STANCE_CeaseFire) end
+	if  SGroup_Exists("sg_STANCE_Attack") then Cmd_SetStance("sg_STANCE_Attack",STANCE_Attack) end
+	
+	-- Initialisation des reparation automatiques multizone
+	Init_Repair_AllZone()
+	
+	-- Initialisation du maintien full cap des squads
+	Init_Upgrade_AllSquads()
+		
+	-- demarrage des rules
+	Start_Rules()
+	
+end
+
+
+--
+-- Lancement du script
+Scar_AddInit(OnInit)
+

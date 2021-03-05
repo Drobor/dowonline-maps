@@ -1,0 +1,138 @@
+-------------------------------------------------
+--[[ IMPORTS ]]
+-------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+ 
+-------------------------------------------------
+--[[ GAME SETUP ]]
+-------------------------------------------------
+ 
+ 
+-------------------------------------------------
+--[[ ON INITIALIZATION ]]
+-------------------------------------------------
+ 
+function OnInit()
+g_ii=0 
+g_player=0
+g_artillary_group=0
+g_show_ping=0
+g_ii1=0 
+g_player1=0
+g_artillary_group1=0
+g_show_ping1=0
+g_ii2=0 
+g_player2=0
+g_artillary_group2=0
+g_show_ping2=0
+Rule_AddInterval (Rule_RelicOwnerOne,1) --[[Run this rule every second]]--
+Rule_AddInterval (Rule_RelicOwnerTwo,1)
+Rule_AddInterval (Rule_RelicOwnerThree,1)
+end
+
+--[[ the Scar_AddInit(OnInit) function is mandatory! This registers your init function with scar. ]]
+Scar_AddInit(OnInit)
+
+function Rule_RelicOwnerOne()
+
+	
+	for g_ii=0, World_GetPlayerCount()-1 do  -- sets up a loop to flick from player to player
+	g_player = World_GetPlayerAt(g_ii)  	
+
+				
+		if EGroup_IsCapturedByPlayer("Trigger",g_player,true) and (g_artillary_group==0) then 
+			g_artillary_group=1 
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_1", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker1", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_2", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker2", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_1", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker9", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_2", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker10", "basic_marker")), 1, 1)
+			pg_ping_one = Ping_Position(Marker_GetPosition(Marker_FromName("marker1", "basic_marker")),true,"attack")
+			pg_ping_two = Ping_Position(Marker_GetPosition(Marker_FromName("marker2", "basic_marker")),true,"attack")
+			pg_ping_nine = Ping_Position(Marker_GetPosition(Marker_FromName("marker9", "basic_marker")),true,"attack")
+			pg_ping_ten = Ping_Position(Marker_GetPosition(Marker_FromName("marker10", "basic_marker")),true,"attack")
+			W40k_ShowSystemMessage( "City Defenses Activated")
+		end
+		
+		if (g_artillary_group==1) then 
+			if (g_show_ping)>=20 then
+				Ping_Stop(pg_ping_one)
+				Ping_Stop(pg_ping_two)
+				Ping_Stop(pg_ping_nine)
+				Ping_Stop(pg_ping_ten)				
+				W40k_ShowSystemMessage( "")
+			end
+			if (g_show_ping)<=20 then
+				g_show_ping = g_show_ping+1
+			end
+		end	
+	end
+end
+
+function Rule_RelicOwnerTwo()
+
+	
+	for g_ii1=0, World_GetPlayerCount()-1 do  -- sets up a loop to flick from player to player
+	g_player1 = World_GetPlayerAt(g_ii1)  	
+
+				
+		if EGroup_IsCapturedByPlayer("Trigger1",g_player1,true) and (g_artillary_group1==0) then 
+			g_artillary_group1=1 
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_3", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker3", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_4", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker4", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "Artillary_5", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker5", "basic_marker")), 1, 1)
+
+			pg_ping_three = Ping_Position(Marker_GetPosition(Marker_FromName("marker3", "basic_marker")),true,"attack")
+			pg_ping_four = Ping_Position(Marker_GetPosition(Marker_FromName("marker4", "basic_marker")),true,"attack")
+			pg_ping_five = Ping_Position(Marker_GetPosition(Marker_FromName("marker5", "basic_marker")),true,"attack")
+			W40k_ShowSystemMessage( "Castle Defenses Activated")
+		end
+		
+		if (g_artillary_group1==1) then 
+			if (g_show_ping1)>=20 then
+				Ping_Stop(pg_ping_three)
+				Ping_Stop(pg_ping_four)
+				Ping_Stop(pg_ping_five)
+				W40k_ShowSystemMessage( "")
+			end
+			
+			if (g_show_ping1)<=20 then
+				g_show_ping1 = g_show_ping1+1
+			end
+		end	
+	end
+end
+
+function Rule_RelicOwnerThree()
+
+	
+	for g_ii2=0, World_GetPlayerCount()-1 do  -- sets up a loop to flick from player to player
+	g_player2 = World_GetPlayerAt(g_ii2)  	
+
+				
+		if EGroup_IsCapturedByPlayer("Trigger2",g_player2,true) and (g_artillary_group2==0) then 
+			g_artillary_group2=1 
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player2, "Artillary_6", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker6", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player2, "Artillary_7", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker7", "basic_marker")), 1, 1)
+			local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player2, "Artillary_8", "space_marine_squad_whirlwind", Marker_GetPosition(Marker_FromName("marker8", "basic_marker")), 1, 1)
+
+			pg_ping_six = Ping_Position(Marker_GetPosition(Marker_FromName("marker6", "basic_marker")),true,"attack")
+			pg_ping_seven = Ping_Position(Marker_GetPosition(Marker_FromName("marker7", "basic_marker")),true,"attack")
+			pg_ping_eight = Ping_Position(Marker_GetPosition(Marker_FromName("marker8", "basic_marker")),true,"attack")
+			W40k_ShowSystemMessage( "Harbor Defenses Activated")
+		end
+		
+		if (g_artillary_group2==1) then 
+			if (g_show_ping2)>=20 then
+				Ping_Stop(pg_ping_six)
+				Ping_Stop(pg_ping_seven)
+				Ping_Stop(pg_ping_eight)
+				W40k_ShowSystemMessage( "")
+			end
+			
+			if (g_show_ping2)<=20 then
+				g_show_ping2 = g_show_ping2+1
+			end
+		end	
+	end
+end

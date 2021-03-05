@@ -1,0 +1,143 @@
+--Tank!
+--Monster Tank script by Fuggles
+
+-----------------------------------------------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+
+
+function OnInit()
+	
+	
+	g_Player1 = World_GetPlayerAt(0)
+	g_Player2 = World_GetPlayerAt(1)
+	g_Player3 = World_GetPlayerAt(2)
+	g_Player4 = World_GetPlayerAt(3)
+	Rule_AddInterval(p1tankgo,1)
+	Rule_AddInterval(p2tankgo,1)	
+	Rule_AddInterval(skint,0)
+	Rule_AddInterval(ceasefire,0)
+	Rule_AddOneShot(tankrot,0)
+	donate = 1
+	donate2 = 1
+	SGroup_SetHealthInvulnerable("tank1", true)
+	SGroup_SetHealthInvulnerable("tankcom1", true)
+	SGroup_SetHealthInvulnerable("tank2", true)
+	SGroup_SetHealthInvulnerable("tankcom2", true)
+print"let's go"
+
+end
+
+
+
+Scar_AddInit(OnInit)
+
+
+function p1tankgo()
+
+if Prox_AnySquadNearMarker( "tankcom1", "P1tank" )==true then
+Rule_Remove(p1tankgo)
+SGroup_SetPlayerOwner("tank1", g_Player1)
+gift0 =	 Stats_PlayerResTributed(Player_GetID(g_Player1), 0 )
+gift1 = Stats_PlayerResTributed(Player_GetID(g_Player1), 1 )
+
+
+donate = donate + ((gift0+gift1)/20)
+
+squad_list = 
+{
+    "guard_vehicles_baneblade",
+
+}
+
+modifiers = {}
+
+for i=1,table.getn( squad_list ) do
+
+  
+    local tankmodifier = Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, donate, 
+        squad_list[i]                       
+    )
+    
+ 
+    modifiers[i] = Modifier_ApplyToPlayer( tankmodifier, g_Player1 )
+SGroup_SetHealthInvulnerable("tank1", false)
+EGroup_DestroyAllEntities("barrier1",true)
+SGroup_DestroyAllSquads("tankcom1")
+end
+end
+end
+
+function p2tankgo()
+if Prox_AnySquadNearMarker( "tankcom2", "P2tank" )==true then
+Rule_Remove(p2tankgo)
+SGroup_SetPlayerOwner("tank2", g_Player3)
+
+gift2 = Stats_PlayerResTributed(Player_GetID(g_Player3), 0 )
+gift3 = Stats_PlayerResTributed(Player_GetID(g_Player3), 1 )
+
+donate2 = donate2 + ((gift2+gift3)/20)
+
+squad_list = 
+{
+    "guard_vehicles_baneblade",
+
+}
+
+modifiers = {}
+
+for i=1,table.getn( squad_list ) do
+
+  
+    local tankmodifier = Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, donate2, 
+        squad_list[i]                       
+    )
+    
+ 
+    modifiers[i] = Modifier_ApplyToPlayer( tankmodifier, g_Player3 )
+SGroup_SetHealthInvulnerable("tank2", false)
+EGroup_DestroyAllEntities("barrier2",true)
+SGroup_DestroyAllSquads("tankcom2")
+
+end
+end
+end
+
+function tankrot()
+squad_list = 
+{
+    "guard_vehicles_baneblade",
+
+}
+
+modifiers = {}
+
+for i=1,table.getn( squad_list ) do
+
+  
+    local tankmodifier = Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, 0.001, 
+        squad_list[i]                       
+    )
+    
+ 
+    modifiers[i] = Modifier_ApplyToPlayer( tankmodifier, g_Player1 )
+    modifiers[i] = Modifier_ApplyToPlayer( tankmodifier, g_Player3 )
+end
+end
+
+
+function skint()
+Player_SetAllResources( g_Player2, 0)
+Player_SetAllResources( g_Player4, 0)
+end
+
+
+
+
+function ceasefire()
+SGroup_AddGroup(SGroup_CreateIfNotFound("ceasefire"), Player_GetSquads(g_Player2))
+Cmd_SetStance( "ceasefire", STANCE_CeaseFire)
+SGroup_AddGroup(SGroup_CreateIfNotFound("ceasefire"), Player_GetSquads(g_Player4))
+Cmd_SetStance( "ceasefire", STANCE_CeaseFire)
+end

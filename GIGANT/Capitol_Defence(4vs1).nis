@@ -1,0 +1,86 @@
+----------------------------------------------------------------------------------------------------------------
+-- SCAR Example Events script
+-- (c) 2004 Relic Entertainment Inc.
+--
+-- This script demonstrates how to start NISlets and Intel events
+--
+-- NISlets and Intel Events have different priortities when started with Event_Start.
+-- The utility functions Util_StartNISlet and Util_StartIntel simply call Event_Start
+-- with priorities 0 for NISlet and 1 for Intel events.  In the event system, the highest
+-- priority is given to 0.
+--
+-- When playing events, the following rules apply
+-- 1) If you are starting an event that has higher priority than the current event, then
+--      the current event will be skipped.
+-- 2) If you are starting an event that has a lower or equal priority than the current event,
+--      then the new event will be queud.
+-- 3) Events are queued based on their priorities, so higher priorities will always play
+--      before low priorities
+-- 4) Skipping an event using Esc will only skip the current event, so if
+--      there are more events in the queue, the esc key will have to get pressed for each
+--      of them
+-- 
+-- This means that if you start a NISlet while an Intel event is playing, the intel event
+--  will be skipped, and the NISlet will start; however, if you start an Intel event while
+--  a NISlet is playing, the Intel event will be queued to play when it gets a chance.
+
+
+EVENTS={}
+
+EVENTS.NIS1 = function()
+    print("NIS1 START")
+    --WXP_OpeningNISPreset()
+    --CTRL.W40k_Letterbox( true, 2 )
+    --CTRL.WAIT()
+    Util_MissionTitle("Capitol Defense")
+	CPath_Start( "canim_02", "00", "11" )
+--	CPath_Start("canim_01", "09", "13"  )
+--	CTRL.Path_KeyframeWait( "canim_01", "02" )
+	CTRL.Event_Delay( 36 )
+--	SPath_Start( "manim_01", "00", "10", "GK1" )
+--	SPath_StartEx( "manim_01", "00", "10", SGroup_FromName("GK1"), 1, true )
+--	CTRL.Path_KeyframeWait( "manim_01", "09" )
+	CTRL.WAIT()
+--	SGroup_FaceRandom( SGroup_FromName("GK1" ))
+--	SGroup_FaceRandom( SGroup_FromName("GK2" ))
+--	SPath_Finish("manim_01")
+	CPath_Blendout( 1 )
+--	CTRL.WAIT()
+
+    --CTRL.Event_Delay( 5 )
+    --CTRL.WAIT()
+    
+    --CTRL.W40k_Letterbox( false, 2 )
+    --CTRL.WAIT()
+    --Fade_Start(1, true)
+	--CTRL.WAIT()
+
+	--CTRL.WAIT()
+--	Camera_SetInputEnabled( true )
+--	Camera_DefaultView() 
+    print("NIS1 END")
+	Camera_SetInputEnabled( true )
+	Camera_DefaultView() 
+
+end
+
+
+
+-- Queue up a bunch of events
+--Util_StartIntel     ( EVENTS.INTEL1 )
+Util_StartNIS       ( EVENTS.NIS1 )
+--Util_StartIntel     ( EVENTS.INTEL1 )
+--Util_StartIntel     ( EVENTS.INTEL2 )
+--Util_StartIntel     ( EVENTS.INTEL2 )
+
+-- The actual order they will get played in:
+-- *EVENTS.INTEL1 : This event would get skipped when NIS1 is started
+-- EVENTS.NIS1
+-- EVENTS.NIS2
+-- EVENTS.INTEL1
+-- EVENTS.INTEL2
+-- EVENTS.INTEL2
+
+
+
+

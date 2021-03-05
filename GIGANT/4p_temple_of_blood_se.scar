@@ -1,0 +1,222 @@
+import("ScarUtil.scar")
+
+-- Size of the map, as denoted when you create it.
+mapsize_x = 512
+mapsize_y = 256
+emittervolume = 20
+eventname = "blood"
+density = 0.05
+
+function Inity()
+
+	Rule_AddInterval(Rule_Rainy, density)
+	Rule_AddInterval(Rule_Khorne,5)
+	Rule_AddInterval(Rule_BromAlter, 20)
+	Rule_AddInterval(Rule_NobAlter, 20)
+	Rule_AddInterval(Rule_RelicOwnerOne,1)
+	Rule_AddInterval(Rule_RelicOwnerTwo,1)	
+	-- checks every second if anyone owns the relic
+	xmin = mapsize_x / (-2*emittervolume)
+	xmax = mapsize_x / (2*emittervolume)
+	ymin = mapsize_y / (-2*emittervolume)
+	ymax = mapsize_y / (2*emittervolume)
+
+	eventpath1 = "data:Art/Events/blood.events" 
+	eventpath2 = "data:Art/Events/khorne.events"
+	eventpath3 = "data:Art/Events/nob_alter.events"
+	eventpath4 = "data:Art/Events/brom_alter.events"
+
+	g_i=0
+	g_ii=0
+	g_player=0
+	g_player_two = 0
+	g_bloodthirster=0
+	g_bloodthirster_two=0
+	g_spawntimer=0
+	g_spawntimer_two=0
+	g_warning = 0
+	g_warning_two = 0
+	
+end
+
+Scar_AddInit(Inity)
+
+--//////////////////////////////////////////////////////////////////////////////////////////////////
+
+function Rule_Rainy()
+
+	for i = xmin, xmax do
+		for j = ymin, ymax do
+			World_FXEvent(eventpath1, Util_ScarPos(i*emittervolume, j*emittervolume))
+		end
+	end
+	
+end
+
+--//////////////////////////////////////////////////////////////////////////////////////////////////
+-- This spawns the fx for the central symbol
+
+function Rule_Khorne()
+
+	World_FXEvent(eventpath2, World_Pos(0,4,0))
+
+end
+
+--//////////////////////////////////////////////////////////////////////////////////////////////////
+-- Controls Col. Brom's fountain. =)
+
+function Rule_BromAlter()
+
+	World_FXEvent(eventpath4, World_Pos(-94,15,2))
+
+end
+
+--//////////////////////////////////////////////////////////////////////////////////////////////////
+-- Controls Ork Nob's fountain.
+
+function Rule_NobAlter()
+
+	World_FXEvent(eventpath3, World_Pos(96,15,0))
+
+end
+
+--//////////////////////////////////////////////////////////////////////////////////////////////////
+-- This function should spawn a Bloodthirster for a player if they have held a relic for five minutes.
+-- If the player already has a BT from the relic one should not spawn, but if a Chaos player has
+-- summoned a BT through normal means they should be allowed to have a second one.
+-- BTs should spawn on the appropriate teams marker.
+--/////////////////////////////////////////////////////////////////////////////////////////////////////
+--***********************************************************************************
+--Everything below this line is by Argonaut. Feel free to use it for whatever you want, and ask me if you'd like some help!
+--The E_Groups set up in the ME are;- Relic_1 and Relic_2
+-- The spawn locations are custom markers called bloothrister_spawn_team1 and bloodthirster_spawn_team2
+--The bloodthirster spawns from ownership of each Relic (1 per relic) and once a player has a relic they can only get another by owning the other
+--Relic or being a chaos player. 
+--A good chaos player could have 3 bloodthirsters (1 from owning each relic, and 1 from their own daemon pit)
+--I tried to comment it pretty well :) Enjoy!
+--
+--***********************************************************************************8
+
+function Rule_RelicOwnerOne()
+
+	
+	for g_ii=0, World_GetPlayerCount()-1 do  -- sets up a loop to flick from player to player
+	g_player = World_GetPlayerAt(g_ii)  	
+
+				
+		if EGroup_IsCapturedByPlayer("Relic_1",g_player,true) and (g_bloodthirster==0) and (g_spawntimer==300)then 
+		g_bloodthirster=1 
+		local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "sg_bloodie_one", "chaos_squad_bloodthirster", Marker_GetPosition(Marker_FromName("bloodthirster_spawn_team1", "custom_marker")), 1, 1)
+		pg_ping_one = Ping_Position(Marker_GetPosition(Marker_FromName("bloodthirster_spawn_team1", "custom_marker")),true,"attack")
+		W40k_ShowSystemMessage( "Witness the favour of Khorne...")
+		
+		 
+		elseif EGroup_IsCapturedByPlayer("Relic_1",g_player,true) and (g_bloodthirster==0) and (g_spawntimer<=300) and (g_warning==0)then
+		W40k_ShowSystemMessage( "The Summoning Begins")
+		g_warning=g_warning+1
+		
+		
+		elseif EGroup_IsCapturedByPlayer("Relic_1",g_player,true) and (g_spawntimer<=300) and (g_warning>=1)then
+		g_warning=g_warning+1
+		g_spawntimer=g_spawntimer+1
+		end
+		
+		if EGroup_IsCapturedByPlayer("Relic_1",g_player,true) and (g_bloodthirster==1) and (g_spawntimer>=310) then
+		W40k_HideSystemMessage( "Witness the favour of Khorne...")
+		Rule_AddInterval(Rule_BloodOne,1) 
+		Rule_AddOneShot(Rule_StopPingOne,10)
+		Rule_Remove(Rule_RelicOwnerOne)
+		
+		elseif EGroup_IsCapturedByPlayer("Relic_1",g_player,true) and (g_bloodthirster==1) and(g_spawntimer<=310) then
+		g_spawntimer=g_spawntimer+1
+		end
+		
+		if EGroup_IsCapturedByPlayer("Relic_1",g_player,true) and (g_bloodthirster==0) and (g_spawntimer<=300) and (g_warning>=10)then
+		W40k_HideSystemMessage( "The Summoning Begins")
+
+		end
+		
+	end
+end
+	
+function Rule_BloodOne()
+
+	if SGroup_Count( SGroup_FromName("sg_bloodie_one")) == 0  then 
+	g_bloodthirster=0 
+	g_spawntimer=0 
+	g_warning=0
+	Rule_AddInterval(Rule_RelicOwnerOne,1) 
+	Rule_Remove(Rule_BloodOne) 
+	end
+	
+end
+
+function Rule_StopPingOne()
+	
+	Ping_Stop(pg_ping_one)
+	Rule_Remove(Rule_StopPingOne)
+end
+
+
+function Rule_RelicOwnerTwo()
+
+	
+	for g_i=0, World_GetPlayerCount()-1 do  -- sets up a loop to flick from player to player
+	g_player_two = World_GetPlayerAt(g_i)  	
+
+				
+		if EGroup_IsCapturedByPlayer("Relic_2",g_player_two,true) and (g_bloodthirster_two==0) and (g_spawntimer_two==300)then 
+		g_bloodthirster_two=1 
+		local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player_two, "sg_bloodie_two", "chaos_squad_bloodthirster", Marker_GetPosition(Marker_FromName("bloodthirster_spawn_team2", "custom_marker")), 1, 1)
+		pg_ping_two = Ping_Position(Marker_GetPosition(Marker_FromName("bloodthirster_spawn_team2", "custom_marker")),true,"attack")
+		W40k_ShowSystemMessage( "The Manifest Blessing of the Blood God...")
+		
+		 
+		elseif EGroup_IsCapturedByPlayer("Relic_2",g_player_two,true) and (g_bloodthirster_two==0) and (g_spawntimer_two<=300) and (g_warning_two==0)then
+		W40k_ShowSystemMessage( "The Ceremony Commences")
+		g_warning_two=g_warning_two+1
+		
+		
+		elseif EGroup_IsCapturedByPlayer("Relic_2",g_player_two,true) and (g_spawntimer_two<=300) and (g_warning_two>=1)then
+		g_warning_two=g_warning_two+1
+		g_spawntimer_two=g_spawntimer_two+1
+		end
+		
+		if EGroup_IsCapturedByPlayer("Relic_2",g_player_two,true) and (g_bloodthirster_two==1) and (g_spawntimer_two>=310) then
+		W40k_HideSystemMessage( "The Manifest Blessing of the Blood God...")
+		Rule_AddInterval(Rule_BloodTwo,1) 
+		Rule_AddOneShot(Rule_StopPingTwo,10)
+		Rule_Remove(Rule_RelicOwnerTwo)
+		
+		elseif EGroup_IsCapturedByPlayer("Relic_2",g_player_two,true) and (g_bloodthirster_two==1) and(g_spawntimer_two<=310) then
+		g_spawntimer_two=g_spawntimer_two+1
+		end
+		
+		if EGroup_IsCapturedByPlayer("Relic_2",g_player_two,true) and (g_bloodthirster_two==0) and (g_spawntimer_two<=300) and (g_warning_two>=10)then
+		W40k_HideSystemMessage( "The Ceremony Commences")
+
+		end
+		
+	end
+end
+	
+function Rule_BloodTwo()
+
+	if SGroup_Count( SGroup_FromName("sg_bloodie_two")) == 0  then 
+	g_bloodthirster_two=0 
+	g_spawntimer_two=0 
+	g_warning_two=0
+	Rule_AddInterval(Rule_RelicOwnerTwo,1) 
+	Rule_Remove(Rule_BloodTwo) 
+	end
+	
+end
+
+function Rule_StopPingTwo()
+	
+	Ping_Stop(pg_ping_two)
+	Rule_Remove(Rule_StopPingTwo)
+end
+
+
+

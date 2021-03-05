@@ -1,0 +1,159 @@
+-------------------------------------------------
+--[[ IMPORTS ]]
+-------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+ 
+-------------------------------------------------
+--[[ GAME SETUP ]]
+-------------------------------------------------
+ 
+ 
+-------------------------------------------------
+--[[ ON INITIALIZATION ]]
+-------------------------------------------------
+ 
+function OnInit()
+ 
+--[[ START THE MUSIC ]]
+-- call the function to load the jukebox with tunes]]
+Rule_SetupMusicPlaylist()
+Rule_AddInterval(Rule_RelicOwnerOne,1)
+g_daemonprince=0
+g_spawntimer=0
+g_warning=0
+g_deamonowner=0
+g_minhealth=10
+end
+ 
+--[[ the Scar_AddInit(OnInit) function is mandatory! This registers your init function with scar. ]]
+Scar_AddInit(OnInit)
+ 
+ 
+ 
+-------------------------------------------------
+--[[ MUSIC ]]
+-------------------------------------------------
+ 
+function Rule_SetupMusicPlaylist() 
+ 
+t_ambient = {"Rain_thunder_amb" }
+ 
+--~ 
+--~ 
+--~ "Rain_thunder_amb",
+--~ "Snowy_wind_1",
+--~ "Snowy_wind_2",
+ 
+ 
+Playlist_Manager( PC_Ambient, t_ambient, true , true , {5, 10})
+ 
+end
+ 
+ 
+function Rule_RelicOwnerOne()
+ 
+ 
+for g_ii=0, World_GetPlayerCount()-1 do -- sets up a loop to flick from player to player
+g_player = World_GetPlayerAt(g_ii) 
+
+if EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player,true) and (g_daemonprince==0) and (g_spawntimer==300)then 
+g_daemonprince=1 
+local sgroupID1 =Util_CreateSquadsAtPositionEx(g_player, "sg_prince", "chaos_squad_daemon_prince", Marker_GetPosition(Marker_FromName("mk_deamon_prince_spawn", "basic_marker")), 1, 1)
+pg_ping_one = Ping_Position(Marker_GetPosition(Marker_FromName("mk_deamon_prince_spawn", "basic_marker")),true,"attack")
+g_deamonowner = World_GetPlayerAt(g_ii)
+W40k_ShowSystemMessage( "The Daemon Has Arrived")
+ 
+ 
+elseif EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player,true) and (g_daemonprince==0) and (g_spawntimer<=300) and (g_warning==0)then
+W40k_ShowSystemMessage( "The Summoning Begins")
+g_warning=g_warning+1
+ 
+ 
+elseif EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player,true) and (g_spawntimer<=300) and (g_warning>=1)then
+g_warning=g_warning+1
+g_spawntimer=g_spawntimer+1
+end
+ 
+if not WinWarning_Exists("warning_name" ) then
+	WinWarning_Add( "warning_name", g_player, "", "wincondition_name", "help tip text" )
+end
+
+if (g_spawntimer>0) and (g_spawntimer<300) then
+	local minutes = 0
+	local seconds = 0
+	if (g_spawntimer >= 240) then
+		minutes = 0
+		seconds = 300 - g_spawntimer
+	elseif (g_spawntimer >180) and (g_spawntimer <= 240) then
+		minutes = 1
+		seconds = 240 - g_spawntimer
+	elseif (g_spawntimer >120) and (g_spawntimer <= 180) then
+		minutes = 2
+		seconds = 180 - g_spawntimer
+	elseif (g_spawntimer >60) and (g_spawntimer <= 120) then
+		minutes = 3
+		seconds = 120 - g_spawntimer 
+	elseif (g_spawntimer <= 60) then
+		minutes = 4
+		seconds = 60 - g_spawntimer
+	end
+	
+	if (seconds < 10) then
+		WinWarning_SetText( "warning_name", "Deamon will arrive in 0:0"..minutes..":0"..seconds )
+	else
+		WinWarning_SetText( "warning_name", "Deamon will arrive in 0:0"..minutes..":"..seconds )
+	end
+else
+	WinWarning_SetText( "warning_name", " " )
+end
+
+if EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player,true) and (g_daemonprince==1) and (g_spawntimer>=310) then
+W40k_HideSystemMessage( "The Daemon Has Arrived")
+Rule_AddInterval(Rule_BloodOne,1) 
+Rule_AddOneShot(Rule_StopPingOne,10)
+Rule_Remove(Rule_RelicOwnerOne)
+ 
+elseif EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player,true) and (g_daemonprince==1) and(g_spawntimer<=310) then
+g_spawntimer=g_spawntimer+1
+end
+ 
+if EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player,true) and (g_daemonprince==0) and (g_spawntimer<=300) and (g_warning>=10)then
+W40k_HideSystemMessage( "The Summoning Begins")
+ 
+end
+ 
+end
+end
+ 
+function Rule_BloodOne() 
+ 
+	if SGroup_Count( SGroup_FromName("sg_prince")) == 0 then 
+		g_daemonprince=0 
+		g_spawntimer=0 
+		g_warning=0
+		Rule_AddInterval(Rule_RelicOwnerOne,1) 
+		Rule_Remove(Rule_BloodOne) 
+	end
+ 
+      local captured = EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_deamonowner,true)
+	if (captured==false) then
+		local act_health = SGroup_GetAvgHealth( "sg_prince" )
+		act_health = act_health - 0.005
+		SGroup_SetAvgHealth( "sg_prince", act_health )
+	end
+
+	for g_iii=0, World_GetPlayerCount()-1 do -- sets up a loop to flick from player to player
+		g_player_stealer = World_GetPlayerAt(g_iii) 
+		if (g_daemonprince>=0) and EGroup_IsCapturedByPlayer("eg_deamon_prince_trigger",g_player_stealer,true) then
+			g_deamonowner = World_GetPlayerAt(g_iii)						
+			SGroup_SetPlayerOwner("sg_prince",g_player_stealer)
+		end
+	end
+end
+ 
+function Rule_StopPingOne()
+ 
+Ping_Stop(pg_ping_one)
+Rule_Remove(Rule_StopPingOne)
+end

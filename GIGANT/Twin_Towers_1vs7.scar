@@ -1,0 +1,346 @@
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+--EZScar  The easy way to do scar programming
+--Version 2.012 Beta
+--Tim Young (programmer), Dre Reding (Lua reference), Philip Young (Idea Man/tester)
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+--For information on how to customize this for your own maps, read the doc
+--that comes with this.  Please keep that document along with all copies
+--of EZScar so anyone stumbling across maps can use EZScar also
+--
+--This script is messageware. You can freely copy, redistribute, change, and use this 
+--code, and are encouraged to do so.  If you reuse small portions of the code, please
+--mention you used EZScar as a reference.  If you reuse the majority of this code,
+--please keep this header and the "message" intact.  The original creators believe 
+--that all people should at least have one opportunity to know that God's Word gives 
+--direction to an abundant life, regardless of race, upbringing, age, education, 
+--or gender. And that there is hope for our lives regardless of the mess we have 
+--made of them.
+--If you are interested in discovering more about this message, here are two
+--websites you can check out:
+--  http://powertochange.com
+--  http://www.rbc.org/bible-study/answers-to-tough-questions/home.aspx
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+--All SCAR scripts need these for them to work:  Do not remove
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+--You can change this line to point to the latest EZScar-2-xxx.scar file
+import("EZScar-2-017B.scar")
+
+------------------------------------------------------------------
+------- Make your edits here ----------------------------------
+------------------------------------------------------------------
+-- g_debug true/false  If set to true, the "enemy" bases will be owned by player 1.  Do this to test base building.
+g_debug = false
+g_debug_print = false
+
+-- g_DestroyHQ  True|False   If you destroy all the HQs in a base, does the base self-destruct?
+g_DestroyHQ = false
+
+--The number of players the map is designed for.  We will compute the difficulty from this
+g_MapConfiguredFor = 4
+
+--Automatically recompute the map difficulty based on the number of players who joined
+g_AutoRecompute=false
+
+--g_max_locations=#  The number of possible locations for the enemy to spawn at.
+--   There should be basic_markers for every location.  Read the "readme" file for information
+--   The markers should be like: 1-hq-1, 1-turret-1, 1-military-1, 1-minefield-1, 1-power-1
+--    Where the first number is the "location" and the second number is an incremantal count.
+--    12-turret-5 is the fifth turret at the location number 12
+g_max_locations=1
+
+--If using the eldar and webways, each successive wave comes from the next webway.
+--if set to "false", the waves will come from one webway until that one is destroyed
+--then it will move to the next
+g_cycle_webways=true
+
+--g_WaveDelay = an array of delay times before each wave.  If not enough times are given, the last time
+--listed will be used for all the remaining waves.
+g_WaveDelay= {
+	5, 30, 20 
+}
+
+
+--To add another race, simply add them to this list (make sure a marker exists for this race)
+--marker, blueprint, ally_name, race
+g_ally_builders={
+	"start_squad1","space_marine_squad_servitor","SM_Ally"		,"space_marine_race",
+	"start_squad2","sisters_squad_servitor"		,"Sisters_Ally"	,"sisters_race",
+	"start_squad3","dark_eldar_squad_slave"		,"DE_Ally"		,"dark_eldar_race",
+	"start_squad4","chaos_squad_slave"			,"Chaos_Ally"	,"chaos_marine_race",
+	"start_squad5","eldar_squad_bonesinger"		,"Eldar_Ally"	,"eldar_race",
+	"start_squad6","guard_squad_enginseer"		,"IG_Ally"		,"guard_race",
+	"start_squad7","necron_builder_scarab_squad","Necron_Ally"	,"necron_race",
+	"start_squad8","ork_squad_grot"				,"Ork_Ally"		,"ork_race",
+	"start_squad9","tau_builder_squad"			,"Tau_Ally"		,"tau_race"
+
+--	"start_squad5","eldar_squad_bonesinger"		,"Eldar_Ally"	,"eldar_race",
+}
+
+function build_shrines()
+local looper, loop2
+local chaos_enemy=-1
+local first_enemy=-1
+local text_number
+local marker
+	for looper=1,8 do
+		if chaos_enemy == -1 and getval({"PlayerRace","player"..looper}) == "chaos_race" and getval({"PlayerType","player"..looper}) == "AI" then
+			chaos_enemy=looper
+		end
+		if first_enemy == -1 and getval({"PlayerType","player"..looper}) == "AI" then
+			first_enemy=looper
+		end
+	end
+	if chaos_enemy == -1 then
+		chaos_enemy=first_enemy
+	end
+	if chaos_enemy ~= -1 then
+		--We have a player to give the shrines to.
+		for loop2 = 1,20 do
+			text_number="000"..loop2
+			text_number=string.sub(text_number,-2)
+			marker="shrine_"..text_number
+			if Marker_Exists(marker,"basic_marker") then
+				print("Building a shrine at: "..marker)
+				DoItNow({"Building", "player"..chaos_enemy,marker, "chaos_shrine", "player"..chaos_enemy.."shrine"..loop2})
+			else
+				print("Cannot find marker: "..marker)
+			end
+		end
+	else
+		print("No player meets criteria to give shrines to")
+	end
+end
+
+function choose_teammate()
+	--Accept the first ally_select unit as an ally and build an ally base
+	local base
+	local looper
+	local k, v
+	local chosen
+	--Have a loop to "doitnow squad" the builders
+	for looper = 1, table.getn(g_ally_builders)/4 do
+		base=(looper *4) -3  --This is the first index for each squad
+		if getval({"var_ally_chosen"}) == false and SGroup_Exists(g_ally_builders[base+2]) then
+			--Check to see if this squad is near the marker
+			if Prox_AllSquadsNearMarker( g_ally_builders[base+2], "ally_select" ) then
+				DoItNow({"Set","var_ally_chosen",true})
+				chosen=looper
+				print("Someone chosen: "..chosen.." = "..g_ally_builders[base+3])
+			end
+		end
+	end
+	if getval({"var_ally_chosen"}) == true then
+		--One was chosen this turn.  Deal with it.
+		--1) despawn all of the builders in a nice way
+		--2) build ally base
+		
+		--1) despawn all of the builders in a nice way	
+		for looper = 1, table.getn(g_ally_builders)/4 do
+			base=(looper *4) -3
+			if looper ~= chosen and SGroup_Exists(g_ally_builders[base+2]) then
+				--despawn them nicely (make them sparkle and vanish)
+				World_FXEventSquad( "data:Art/Events/eldar_unit_fx/warp_fx", g_ally_builders[base+2] 
+			
+			--	These are just some funny tests I tried
+			--	World_FXEventSquad( "data:Art/Events/titan_explosions", g_ally_builders[base+2] 
+			-- 	World_FXEventSquad( "data:Art/Events/guard/weapons/baneblade_cannon_hit_rock", g_ally_builders[base+2]
+			--  titan_explosions  decal_set_chaos_taint				
+				)				
+				SGroup_DeSpawn( g_ally_builders[base+2] )
+		--kill them so they do not take up any cap or anything
+				SGroup_SelfDestroy( g_ally_builders[base+2] , false ) 
+			end
+		end
+		--2) build ally base
+--		DoItNow({"Base","player1","spread",g_ally_builders[base+3],"12"})
+	
+		DoItNow({"Base","player1","spread",g_ally_builders[(chosen * 4)],"12"})
+		DoItNow({"Base","player1","spread","default","11"})
+		DoItNow ({"DeSpawn","beacon"})
+-- Increase squad and vehicle caps for player1
+		DoItNow( {"Grant","player1", "vcap",20})
+		DoItNow( {"Grant","player1", "scap",20})
+
+
+-- These next three lines give extra support to player1.  Remove the comment marks "--" from before each line to activate them
+
+	DoItNow({"Base","player1","spread","default","13"})
+	DoItNow( {"Grant","player1", "vcap",40})
+	DoItNow( {"Grant","player1", "scap",40})
+
+-- this isn't needed anymore - 	custom_build_base(g_ally_builders[(chosen*4)])
+	end
+end
+
+function localinit()
+	print("LOCALINIT-start")
+-- Turn off the FOW (for testing)
+	DoItNow({"FOW","off"})
+--
+
+-- Despawn the initial listening posts
+	DoItNow({"DeSpawn","Player1_Posts"})
+
+
+	
+	-- Give starting bases to enemies
+	DoItNow({"Base","player2","spread","default","2"})
+	DoItNow({"Base","player3","spread","default","3"})
+	DoItNow({"Base","player4","spread","default","4"})
+	DoItNow({"Base","player5","spread","default","5"})
+	DoItNow({"Base","player6","spread","default","6"})
+	DoItNow({"Base","player7","spread","default","7"})
+	DoItNow({"Base","player8","spread","default","8"})
+	DoItNow({"Function",build_shrines})
+
+
+
+	
+
+	--This code replaces the "DoItNow" that put the builders in the map
+	local looper
+	local base
+	for looper = 1, table.getn(g_ally_builders)/4 do
+		base=(looper *4) -3  --This is the first index for each squad
+		if SBP_Exists(g_ally_builders[base+1]) then
+			print("Trying to spawn "..g_ally_builders[base+1])
+		  --DoItNow({"Squad",player   ,where_marker         , squad_blueprint       ,squad_name             })
+			DoItNow({"Squad","player1",g_ally_builders[base],g_ally_builders[base+1],g_ally_builders[base+2]})
+		end
+	end
+
+	--DoItNow({"Squad","player1","start_squad1","space_marine_squad_servitor","SM_Ally"})
+	--DoItNow({"Squad","player1","start_squad2","sisters_squad_servitor","Sisters_Ally"})	
+	--DoItNow({"Squad","player1","start_squad3","dark_eldar_squad_slave","DE_Ally"})
+	--DoItNow({"Squad","player1","start_squad4","chaos_squad_slave","Chaos_Ally"})
+	--DoItNow({"Squad","player1","start_squad5","eldar_squad_bonesinger","Eldar_Ally"})
+	--DoItNow({"Squad","player1","start_squad6","guard_squad_enginseer","IG_Ally"})
+	--DoItNow({"Squad","player1","start_squad7","necron_builder_scarab_squad","Necron_Ally"})
+	--DoItNow({"Squad","player1","start_squad8","ork_squad_grot","Ork_Ally"})
+	--DoItNow({"Squad","player1","start_squad9","tau_builder_squad","Tau_Ally"})
+	--DoItNow({"CreateSGroup","player1",{"SM_Ally","Sisters_Ally","DE_Ally","Chaos_Ally",
+	--                                   "Eldar_Ally","IG_Ally","Necron_Ally","Ork_Ally","Tau_Ally"}, "Allies"})
+	DoItNow({"Set","var_ally_chosen",false})
+
+	CreateRule({"Compare",{"var_ally_chosen"},"=", false},{"Function", choose_teammate})
+
+
+-- Increase squad and vehicle caps for orks
+--		DoItNow( {"Grant","player2", "pop",10000})
+--		DoItNow( { "Grant","player2",{"power","req","ork"}, {20000,20000,10000}} )
+
+
+end
+
+
+
+g_GamePlay = {
+--     #wave, race,   #location-on-board, trickle/wave, #difficulty, #squad-cap, #vehicle-cap, #Timer
+
+--	1, "custom1",  		"1",      "trickle",	1, 	60 ,		5 ,2,
+--	1, "custom1",  		"2",      "trickle",	2, 	30 ,		5 ,10,
+--	1, "custom1",  		"3",      "trickle",	3, 	20 ,		5 ,20,
+--	1, "custom1",  		"4",      "trickle",	2, 	30 ,		5 ,10,
+--	1, "custom1",  		"5",      "trickle",	3, 	20 ,		5 ,20,
+--	1, "custom1",  		"6",      "trickle",	2, 	30 ,		5 ,10,
+
+
+
+
+
+--	6, "default",			"2",	  "wave-trickle", 	2, 	15, 8,	10,
+--	6, "default", 	"1",      "trickle",   2, 	15, 7,	3,
+--	6, "default", 	"2",      "trickle",   2, 	10, 4,	3,
+--	6, "default", 	"3",      "trickle",   3, 	5, 	4,	3,
+--	6, "default", 	"4",      "trickle",   1, 	10,	10,	3,
+--	6, "default", 	"2",      "trickle",  	2, 	10,	10,	3,
+--	6, "default", 	"3",      "trickle",   3, 	10,	10,	3,
+}
+
+custom1_buildings =
+{
+
+	"ork_bigger_generator","thermo",1,
+	"ork_boy_hut","military",15,
+	"ork_generator","power",8,
+	"ork_gork_totem","post",20,
+	"ork_hq","none",3,
+	"ork_mek_shop","hq",1,
+	"ork_mine_field","minefield",30,
+	"ork_pile_o_guns","military",1,
+	"ork_waagh_banner","none",10,
+	"ork_waagh_banner_missile_sp","turret",10,
+	"ork_waagh_banner_turret_sp","turret",10,
+}
+
+custom1_squads=
+{
+
+	"ork_flash_gitz_squad","squad",0,1,2,
+	"ork_squad_armored_nob","squad",0,1,0,
+	"ork_squad_armored_nob_advance_sp","squad",0,0,1,
+	"ork_squad_bad_dok","squad",1,1,2,
+	"ork_squad_bad_dok_advance_sp","squad",0,0,0,
+	"ork_squad_bad_dok_sp_trainer","squad",0,0,0,
+	"ork_squad_grot","squad",0,0,0,
+	"ork_squad_killa_kan","vehicle",0,1,2,
+	"ork_squad_killa_kan_advance_sp","vehicle",0,0,0,
+	"ork_squad_looted_tank","vehicle",0,1,1,
+	"ork_squad_looted_tank_advance_sp","vehicle",0,0,1,
+	"ork_squad_looted_tank_sp","vehicle",0,0,0,
+	"ork_squad_mek_boy","squad",1,0,1,
+	"ork_squad_mek_boy_advance_sp","squad",0,1,1,
+	"ork_squad_nob","squad",0,1,2,
+	"ork_squad_nob_advance_sp","squad",0,0,0,
+	"ork_squad_nob_sp","squad",0,0,0,
+	"ork_squad_shoota_boy","squad",2,2,2,
+	"ork_squad_shoota_boy_advance_sp","squad",0,0,0,
+	"ork_squad_slugga","squad",20,15,1,
+	"ork_squad_slugga_advance_sp","squad",0,0,0,
+	"ork_squad_squiggoth","vehicle",0,0,1,
+	"ork_squad_squiggoth_sp_long_rampage","vehicle",0,0,0,
+	"ork_squad_stormboy","squad",1,2,2,
+	"ork_squad_stormboy_advance_sp","squad",0,0,0,
+	"ork_squad_tankbusta","squad",0,1,0,
+	"ork_squad_tankbusta_advance_sp","squad",0,0,3,
+	"ork_squad_trukk","vehicle",2,0,0,
+	"ork_squad_trukk_advance_sp","vehicle",0,0,0,
+	"ork_squad_warboss","squad",0,1,0,
+	"ork_squad_warboss_advance_sp","squad",0,0,1,
+	"ork_squad_warboss_sp_md2","squad",0,0,0,
+	"ork_squad_warboss_stronghold_sp","squad",0,0,0,
+	"ork_squad_wartrak","vehicle",1,2,0,
+	"ork_squad_fighta_bomba","vehicle",0,1,2,
+	"ork_squad_fighta_bomba_sp_dxp3","vehicle",0,0,0,
+	"ork_squad_wartrak_advance_sp","vehicle",0,0,0
+
+
+}
+--     Cmd_EnterBuilding ({ "paratroopers" , "relays"} )
+
+function end_game()
+	--This is a function that tells what to do for the end of game
+	--g_end_time begins as 1 and counts upward, 1 for each second
+	--the gametime function returns the time (minutes/seconds) the game has been played
+	if g_end_time <= 1 then
+		 W40k_Letterbox(true,2)
+	elseif g_end_time <= 3 then
+		W40k_ShowSystemMessage("You have successfully stormed the fortress in: "..gametime())
+	elseif g_end_time <= 6 then
+		W40k_ShowSystemMessage("Try again, against different races")
+	elseif g_end_time <= 9 then
+		W40k_ShowSystemMessage("And remember, multiplayer is more fun!")
+	elseif g_end_time <= 12 then
+		--This last one just pauses for a sec before the end of game
+		W40k_ShowSystemMessage("")
+		W40k_Letterbox(false,2)
+	else
+		--Always end with killing the player2 just in case...
+		Player_Kill( g_Player2 )
+	end
+end
+

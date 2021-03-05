@@ -1,0 +1,589 @@
+-- SCAR code for debarq map V8
+-- feel fre to use this code, just let me know
+-- (c) Dark40k 2008
+
+import("Assault_script_7.scar")
+
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                        GENERAL PARAMETERS:                                            ##
+-- ##                   COMMON DEFENDING RACE AND MAP SPECIFIC DATA                   ##
+-- ##                                                                                                                        ##
+-- ####################################################
+-- these parameters are set whatever the level is. 
+-- this section also contains defending race related parameters
+function InitGeneralParameters()
+
+	-- set to true to turn on the test mode
+	-- TestMapMode=true :
+		-- squads in sg_Start_TestMap are set to invulnerable and cannot break morale
+		-- fow is removed to get a better monitor of what's going on
+	-- TestMapMode=false :
+		-- squads in sg_Start_TestMap are removed (destroyed)
+	TestMapMode=false
+
+	-- list squads that can entrench
+	Rule_Defend_AllZone_CanEntrench={ guard_heavy_weapons_team_squad=true }
+	-- list squads that can uproot
+	Rule_Defend_AllZone_CanUpRoot={ guard_heavy_weapon_team_entrenched_squad_sp=true }
+
+	-- squad used to repair buildings
+	Repair_Constructor_Unit="guard_squad_enginseer"
+	-- listening post used for defender captured points
+	Repair_ListeningPost_Entity="guard_listening_post"
+	
+	-- this table provides the researches that are granted to the defender at start
+	-- it may be transfered in the InitParameters_<level> functions to get better tuning.
+	--
+	-- Warning: make sure you provide required researches to use/upgrade squads or buildings
+	--
+	GrantResearch_List={ 
+		"guard_guardsman_morale", 
+		"guard_upgrade_guardsmen_health",
+		"guard_research_command_squad_size",
+		"guard_research_assassin_infiltrate",
+		"guard_upgrade_guardsmen_range",
+		"guard_guardsman_morale_2",
+		"guard_upgrade_weapon_specialization",
+		"guard_research_kasrkin_speed",
+		"guard_research_kasrkin_armor",
+		"guard_upgrade_ogryn_melee"
+		}
+
+	-- this table provides addons to buildings at start or when rebuilding.
+	--
+	-- Warning: make sure you provide required addons to use/upgrade squads or buildings
+	--
+	Entity_FullCapData["guard_hq"]= {
+		"addon_guard_hq_1",
+		"addon_guard_hq_2",
+		"addon_guard_ministorum_temple",
+		"addon_guard_telepathica_temple",
+		"addon_guard_vindicare_temple"
+	}
+	Entity_FullCapData["guard_infantry"]= {
+		"addon_guard_kasrkin_quarters",
+		"addon_guard_ogryn_quarters"
+	}
+	Entity_FullCapData["guard_listening_post"]= {
+		"addon_guard_list_post_1",
+		"addon_guard_list_post_2"
+	}
+	
+end
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                               EASY PARAMETERS                                                            ##
+-- ##                                                                                                                        ##
+-- ####################################################
+function InitParameters_Easy()
+
+	print("Applying Easy parameters")
+	
+	-- *************************************************************************************
+	-- SQUAD / BUILDINGS REMOVAL
+	-- *************************************************************************************
+	-- Groups listed below are removed (killed/detroyed) at the beginning of the game. This is used 
+	-- to add / remove units based on the level selection.
+
+	-- Squad groups to be removed at game start to set the level
+	Level_SGroup_Remove={"sg_Level_Easy"} 
+	-- Entity groups to be remove at game start to set the level
+	Level_EGroup_Remove={"eg_Level_Easy"} 
+	
+	-- *************************************************************************************
+	-- BUILDING RULE
+	-- *************************************************************************************
+	-- delay (x5s) before a building is respawned
+	Repair_Entity_InitWaitCycles = 24  
+	
+	-- *************************************************************************************
+	-- DEFENDING RULE
+	-- *************************************************************************************
+	-- delay (x1s) before a killed defending squad is resurected
+	Repair_Defend_InitWaitCycles = 150 
+	
+	-- *************************************************************************************
+	-- RECOVER RULE
+	-- *************************************************************************************
+	--delay (x5s) before the recovering squad is generated after zone is taken or squad killed
+	Repair_Recover_InitWaitCycles = 12 
+	
+	-- *************************************************************************************
+	-- ATTACK RULE
+	-- *************************************************************************************
+	--delay (x5s) before the attack group is generated after zone is taken or all attack group killed
+	Repair_Attack_InitWaitCycles = 60
+
+	-- *************************************************************************************
+	-- FILLING RULE (IG BUNKERS)
+	-- *************************************************************************************
+	--delay (x1s) before a finished bunker is filled
+	Rule_Fill_AllEntities_InitWaitCycles=5 
+	--size of the squads used to fill the bunkers
+	Rule_Fill_SquadSize=9 
+	--nbr of squads filled in the bunker
+	Rule_Fill_SquadNbr=2 
+	--type of squad used to fill the bunker
+	Repair_Fill_Unit="guard_squad_guardsmen" 
+
+	-- *************************************************************************************
+	-- ATTACHEMENT RULE
+	-- *************************************************************************************
+	--delay (x1s) before a killed attachement unit is respawned
+	Rule_Attach_InitWaitCycles=30 
+	--to get a unit attached to one (several) squad(s): assign the squad(s) in an SquadGroup using 
+	--Mission Editor.
+	--Add a line in the following table naming the SquadGroup name and the blueprint of the attached
+	-- squad. Don't forget the comma at the line end if it is not the last one.
+	-- Example: {sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+	--
+	Rule_Attach_Groups={ 
+	}
+	
+	-- *************************************************************************************
+	-- UPGRADE RULE
+	-- *************************************************************************************
+	-- delay (x5s) between each reinforcement (1 at a time) or weapon improvement.
+	Rule_Upgrade_AllSquads_InitWaitCycles=3 
+	
+	-- The following table lists the max size (including leader for each squad) depending on squad type and the weapons improvements attributions. 
+	-- You can remove lines in the weapon section to prevent the squad from getting some specific weapon for an easier game. 
+	-- 0 should work but I haven't tried. 
+	-- Warning: I think it does not work to exceed the game max allowance for special weapons.
+	
+	Squad_UpgradeData["guard_squad_guardsmen"]={
+		maxsize=9
+	}
+	Squad_UpgradeData["guard_squad_kasrkin"]={
+		maxsize=7
+	}
+	Squad_UpgradeData["guard_squad_ogryns"]={
+		maxsize=7
+	}
+end
+
+--
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                        STANDARD PARAMETERS                                           ##
+-- ##                                                                                                                        ##
+-- ####################################################
+function InitParameters_Standard()
+
+	print("Applying Standard parameters")
+
+	-- *************************************************************************************
+	-- SQUAD / BUILDINGS REMOVAL
+	-- *************************************************************************************
+	-- Groups listed below are removed (killed/detroyed) at the beginning of the game. This is used 
+	-- to add / remove units based on the level selection.
+	
+	-- Squad groups to be removed at game start to set the level
+	Level_SGroup_Remove={"sg_Level_Standard"} 
+	-- Entity groups to be remove at game start to set the level
+	Level_EGroup_Remove={"eg_Level_Standard"} 
+	
+	-- *************************************************************************************
+	-- BUILDING RULE
+	-- *************************************************************************************
+	-- delay (x5s) before a building is respawned
+	Repair_Entity_InitWaitCycles = 18 
+	
+	-- *************************************************************************************
+	-- DEFENDING RULE
+	-- *************************************************************************************
+	-- delay (x1s) before a killed defending squad is resurected
+	Repair_Defend_InitWaitCycles = 120 
+	
+	-- *************************************************************************************
+	-- RECOVER RULE
+	-- *************************************************************************************
+	--delay (x5s) before the recovering squad is generated after zone is taken or squad killed
+	Repair_Recover_InitWaitCycles = 10 
+	
+	-- *************************************************************************************
+	-- ATTACK RULE
+	-- *************************************************************************************
+	--delay (x5s) before the attack group is generated after zone is taken or all attack group killed
+	Repair_Attack_InitWaitCycles = 48
+
+	-- *************************************************************************************
+	-- FILLING RULE (IG BUNKERS)
+	-- *************************************************************************************
+	--delay (x1s) before a finished bunker is filled
+	Rule_Fill_AllEntities_InitWaitCycles=3 
+	--size of the squads used to fill the bunkers
+	Rule_Fill_SquadSize=13 
+	--nbr of squads filled in the bunker
+	Rule_Fill_SquadNbr=2 
+	--type of squad used to fill the bunker
+	Repair_Fill_Unit="guard_squad_guardsmen" 
+
+	-- *************************************************************************************
+	-- ATTACHEMENT RULE
+	-- *************************************************************************************
+	--delay (x1s) before a killed attachement unit is respawned
+	Rule_Attach_InitWaitCycles=30 
+	--to get a unit attached to one (several) squad(s): assign the squad(s) in an SquadGroup using 
+	--Mission Editor.
+	--Add a line in the following table naming the SquadGroup name and the blueprint of the attached
+	-- squad. Don't forget the comma at the line end if it is not the last one.
+	-- Example: {sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+	--
+	Rule_Attach_Groups={ 
+		{sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+		{sgName="sg_Attach_psyker", BluePrint="guard_squad_psyker"}
+	}
+	
+	-- *************************************************************************************
+	-- UPGRADE RULE
+	-- *************************************************************************************
+	-- delay (x5s) between each reinforcement (1 at a time) or weapon improvement.
+	Rule_Upgrade_AllSquads_InitWaitCycles=2 
+	
+	-- The following table lists the max size (including leader for each squad) depending on squad type and the weapons improvements attributions. 
+	-- You can remove lines in the weapon section to prevent the squad from getting some specific weapon for an easier game. 
+	-- 0 should work but I haven't tried. 
+	-- Warning: I think it does not work to exceed the game max allowance for special weapons.
+	
+	Squad_UpgradeData["guard_squad_guardsmen"]={
+		maxsize=13,
+		weapon={ 
+			guard_grenade_launcher_guardsmen=3
+		}
+	}
+	Squad_UpgradeData["guard_squad_kasrkin"]={
+		maxsize=10,
+		weapon={ 
+			guard_grenade_launcher_kasrkin=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_ogryns"]={
+		maxsize=7,
+		weapon={ 
+		}
+	}
+end
+--
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                       HARD PARAMETERS                                                    ##
+-- ##                                                                                                                        ##
+-- ####################################################
+function InitParameters_Hard()
+
+	print("Applying Hard parameters")
+
+	-- *************************************************************************************
+	-- SQUAD / BUILDINGS REMOVAL
+	-- *************************************************************************************
+	-- Groups listed below are removed (killed/detroyed) at the beginning of the game. This is used 
+	-- to add / remove units based on the level selection.
+	
+	-- Squad groups to be removed at game start to set the level
+	Level_SGroup_Remove={"sg_Level_Hard"} 
+	-- Entity groups to be remove at game start to set the level
+	Level_EGroup_Remove={"eg_Level_Hard"} 
+	
+	-- *************************************************************************************
+	-- BUILDING RULE
+	-- *************************************************************************************
+	-- delay (x5s) before a building is respawned
+	Repair_Entity_InitWaitCycles = 18
+	
+	-- *************************************************************************************
+	-- DEFENDING RULE
+	-- *************************************************************************************
+	-- delay (x1s) before a killed defending squad is resurected
+	Repair_Defend_InitWaitCycles = 120
+	
+	-- *************************************************************************************
+	-- RECOVER RULE
+	-- *************************************************************************************
+	--delay (x5s) before the recovering squad is generated after zone is taken or squad killed
+	Repair_Recover_InitWaitCycles = 10 
+	
+	-- *************************************************************************************
+	-- ATTACK RULE
+	-- *************************************************************************************
+	--delay (x5s) before the attack group is generated after zone is taken or all attack group killed
+	Repair_Attack_InitWaitCycles = 36
+
+	-- *************************************************************************************
+	-- FILLING RULE (IG BUNKERS)
+	-- *************************************************************************************
+	--delay (x1s) before a finished bunker is filled
+	Rule_Fill_AllEntities_InitWaitCycles=1
+	--size of the squads used to fill the bunkers
+	Rule_Fill_SquadSize=13 
+	--nbr of squads filled in the bunker
+	Rule_Fill_SquadNbr=3 
+	--type of squad used to fill the bunker
+	Repair_Fill_Unit="guard_squad_guardsmen" 
+
+	-- *************************************************************************************
+	-- ATTACHEMENT RULE
+	-- *************************************************************************************
+	--delay (x1s) before a killed attachement unit is respawned
+	Rule_Attach_InitWaitCycles=30 
+	--to get a unit attached to one (several) squad(s): assign the squad(s) in an SquadGroup using 
+	--Mission Editor.
+	--Add a line in the following table naming the SquadGroup name and the blueprint of the attached
+	-- squad. Don't forget the comma at the line end if it is not the last one.
+	-- Example: {sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+	--
+	Rule_Attach_Groups={ 
+		{sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+		{sgName="sg_Attach_psyker", BluePrint="guard_squad_psyker"},
+		{sgName="sg_Attach_priest", BluePrint="guard_squad_priest"}
+	}
+	
+	-- *************************************************************************************
+	-- UPGRADE RULE
+	-- *************************************************************************************
+	-- delay (x5s) between each reinforcement (1 at a time) or weapon improvement.
+	Rule_Upgrade_AllSquads_InitWaitCycles=1 
+	
+	-- The following table lists the max size (including leader for each squad) depending on squad type and the weapons improvements attributions. 
+	-- You can remove lines in the weapon section to prevent the squad from getting some specific weapon for an easier game. 
+	-- 0 should work but I haven't tried. 
+	-- Warning: I think it does not work to exceed the game max allowance for special weapons.
+	
+	Squad_UpgradeData["guard_squad_guardsmen"]={
+		maxsize=13,
+		weapon={ 
+			guard_grenade_launcher_guardsmen=3,
+			guard_plasma_gun_guardsmen=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_kasrkin"]={
+		maxsize=10,
+		weapon={ 
+			guard_grenade_launcher_kasrkin=2,
+			guard_plasma_gun_kasrkin=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_ogryns"]={
+		maxsize=7,
+		weapon={ 
+		}
+	}
+	
+end
+
+
+--
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                       HARD PARAMETERS                                                    ##
+-- ##                                                                                                                        ##
+-- ####################################################
+function InitParameters_Advanced()
+
+	print("Applying Advanced parameters")
+
+	-- *************************************************************************************
+	-- SQUAD / BUILDINGS REMOVAL
+	-- *************************************************************************************
+	-- Groups listed below are removed (killed/detroyed) at the beginning of the game. This is used 
+	-- to add / remove units based on the level selection.
+	
+	-- Squad groups to be removed at game start to set the level
+	Level_SGroup_Remove={"sg_Level_Hard"} 
+	-- Entity groups to be remove at game start to set the level
+	Level_EGroup_Remove={"eg_Level_Hard"} 
+	
+	-- *************************************************************************************
+	-- BUILDING RULE
+	-- *************************************************************************************
+	-- delay (x5s) before a building is respawned
+	Repair_Entity_InitWaitCycles = 10 
+	
+	-- *************************************************************************************
+	-- DEFENDING RULE
+	-- *************************************************************************************
+	-- delay (x1s) before a killed defending squad is resurected
+	Repair_Defend_InitWaitCycles = 90
+	
+	-- *************************************************************************************
+	-- RECOVER RULE
+	-- *************************************************************************************
+	--delay (x5s) before the recovering squad is generated after zone is taken or squad killed
+	Repair_Recover_InitWaitCycles = 10 
+	
+	-- *************************************************************************************
+	-- ATTACK RULE
+	-- *************************************************************************************
+	--delay (x5s) before the attack group is generated after zone is taken or all attack group killed
+	Repair_Attack_InitWaitCycles = 24
+
+	-- *************************************************************************************
+	-- FILLING RULE (IG BUNKERS)
+	-- *************************************************************************************
+	--delay (x1s) before a finished bunker is filled
+	Rule_Fill_AllEntities_InitWaitCycles=1
+	--size of the squads used to fill the bunkers
+	Rule_Fill_SquadSize=13 
+	--nbr of squads filled in the bunker
+	Rule_Fill_SquadNbr=3 
+	--type of squad used to fill the bunker
+	Repair_Fill_Unit="guard_squad_guardsmen" 
+
+	-- *************************************************************************************
+	-- ATTACHEMENT RULE
+	-- *************************************************************************************
+	--delay (x1s) before a killed attachement unit is respawned
+	Rule_Attach_InitWaitCycles=30 
+	--to get a unit attached to one (several) squad(s): assign the squad(s) in an SquadGroup using 
+	--Mission Editor.
+	--Add a line in the following table naming the SquadGroup name and the blueprint of the attached
+	-- squad. Don't forget the comma at the line end if it is not the last one.
+	-- Example: {sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+	--
+	Rule_Attach_Groups={ 
+		{sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+		{sgName="sg_Attach_psyker", BluePrint="guard_squad_psyker"},
+		{sgName="sg_Attach_priest", BluePrint="guard_squad_priest"}
+	}
+	
+	-- *************************************************************************************
+	-- UPGRADE RULE
+	-- *************************************************************************************
+	-- delay (x5s) between each reinforcement (1 at a time) or weapon improvement.
+	Rule_Upgrade_AllSquads_InitWaitCycles=1 
+	
+	-- The following table lists the max size (including leader for each squad) depending on squad type and the weapons improvements attributions. 
+	-- You can remove lines in the weapon section to prevent the squad from getting some specific weapon for an easier game. 
+	-- 0 should work but I haven't tried. 
+	-- Warning: I think it does not work to exceed the game max allowance for special weapons.
+	
+	Squad_UpgradeData["guard_squad_guardsmen"]={
+		maxsize=13,
+		weapon={ 
+			guard_grenade_launcher_guardsmen=3,
+			guard_plasma_gun_guardsmen=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_kasrkin"]={
+		maxsize=10,
+		weapon={ 
+			guard_grenade_launcher_kasrkin=2,
+			guard_plasma_gun_kasrkin=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_ogryns"]={
+		maxsize=7,
+		weapon={ 
+		}
+	}
+	
+end
+
+
+--
+-- ####################################################
+-- ##                                                                                                                        ##
+-- ##                                       HARD PARAMETERS                                                    ##
+-- ##                                                                                                                        ##
+-- ####################################################
+function InitParameters_Insane()
+
+	print("Applying Insane parameters")
+
+	-- *************************************************************************************
+	-- SQUAD / BUILDINGS REMOVAL
+	-- *************************************************************************************
+	-- Groups listed below are removed (killed/detroyed) at the beginning of the game. This is used 
+	-- to add / remove units based on the level selection.
+	
+	-- Squad groups to be removed at game start to set the level
+	Level_SGroup_Remove={"sg_Level_Hard"} 
+	-- Entity groups to be remove at game start to set the level
+	Level_EGroup_Remove={"eg_Level_Hard"} 
+	
+	-- *************************************************************************************
+	-- BUILDING RULE
+	-- *************************************************************************************
+	-- delay (x5s) before a building is respawned
+	Repair_Entity_InitWaitCycles = 6  
+	
+	-- *************************************************************************************
+	-- DEFENDING RULE
+	-- *************************************************************************************
+	-- delay (x1s) before a killed defending squad is resurected
+	Repair_Defend_InitWaitCycles = 5 
+	
+	-- *************************************************************************************
+	-- RECOVER RULE
+	-- *************************************************************************************
+	--delay (x5s) before the recovering squad is generated after zone is taken or squad killed
+	Repair_Recover_InitWaitCycles = 10 
+	
+	-- *************************************************************************************
+	-- ATTACK RULE
+	-- *************************************************************************************
+	--delay (x5s) before the attack group is generated after zone is taken or all attack group killed
+	Repair_Attack_InitWaitCycles = 20
+
+	-- *************************************************************************************
+	-- FILLING RULE (IG BUNKERS)
+	-- *************************************************************************************
+	--delay (x1s) before a finished bunker is filled
+	Rule_Fill_AllEntities_InitWaitCycles=1
+	--size of the squads used to fill the bunkers
+	Rule_Fill_SquadSize=13 
+	--nbr of squads filled in the bunker
+	Rule_Fill_SquadNbr=3 
+	--type of squad used to fill the bunker
+	Repair_Fill_Unit="guard_squad_guardsmen" 
+
+	-- *************************************************************************************
+	-- ATTACHEMENT RULE
+	-- *************************************************************************************
+	--delay (x1s) before a killed attachement unit is respawned
+	Rule_Attach_InitWaitCycles=30 
+	--to get a unit attached to one (several) squad(s): assign the squad(s) in an SquadGroup using 
+	--Mission Editor.
+	--Add a line in the following table naming the SquadGroup name and the blueprint of the attached
+	-- squad. Don't forget the comma at the line end if it is not the last one.
+	-- Example: {sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+	--
+	Rule_Attach_Groups={ 
+		{sgName="sg_Attach_commisar", BluePrint="guard_squad_commissar"},
+		{sgName="sg_Attach_psyker", BluePrint="guard_squad_psyker"},
+		{sgName="sg_Attach_priest", BluePrint="guard_squad_priest"}
+	}
+	
+	-- *************************************************************************************
+	-- UPGRADE RULE
+	-- *************************************************************************************
+	-- delay (x5s) between each reinforcement (1 at a time) or weapon improvement.
+	Rule_Upgrade_AllSquads_InitWaitCycles=1 
+	
+	-- The following table lists the max size (including leader for each squad) depending on squad type and the weapons improvements attributions. 
+	-- You can remove lines in the weapon section to prevent the squad from getting some specific weapon for an easier game. 
+	-- 0 should work but I haven't tried. 
+	-- Warning: I think it does not work to exceed the game max allowance for special weapons.
+	
+	Squad_UpgradeData["guard_squad_guardsmen"]={
+		maxsize=13,
+		weapon={ 
+			guard_grenade_launcher_guardsmen=3,
+			guard_plasma_gun_guardsmen=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_kasrkin"]={
+		maxsize=10,
+		weapon={ 
+			guard_grenade_launcher_kasrkin=2,
+			guard_plasma_gun_kasrkin=2
+		}
+	}
+	Squad_UpgradeData["guard_squad_ogryns"]={
+		maxsize=7,
+		weapon={ 
+		}
+	}
+	
+end

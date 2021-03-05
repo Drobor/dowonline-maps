@@ -1,0 +1,48 @@
+-------------------------------------------------
+--[[ IMPORTS ]]
+-------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+-------------------------------------------------
+--[[ GAME SETUP ]]
+-------------------------------------------------
+
+
+-------------------------------------------------
+--[[ ON INITIALIZATION ]]
+-------------------------------------------------
+
+function OnInit()
+	
+	--[[ START THE MUSIC ]]
+	-- call the function to load the jukebox with tunes]]
+	Rule_SetupMusicPlaylist()
+	
+end
+
+--[[ the Scar_AddInit(OnInit) function is mandatory! This registers your init function with scar. ]]
+Scar_AddInit(OnInit)
+	
+
+-------------------------------------------------
+--[[ MUSIC ]]
+-------------------------------------------------
+
+function Rule_SetupMusicPlaylist()
+
+	--music
+	t_music = {"character_taldeer", "mu_ig_str_eldar_perc_str", "mu_ig_str_eldar_perc", "mu_ig_str_eldar", "mu_ig_vic_eldar", "character_taldeer_orch", "haracter_taldeer_perc"}
+	--t_music = {"MU_IG_STR_Necron", "MU_IG_STR_Necron_perc", "MU_IG_STR_Necron_perc_brass", "MU_IG_STR_Necron_perc_str"}
+	
+	Playlist_Manager( PC_Music, t_music, true, true , {20, 40})
+
+
+	--ambient sound
+	t_ambient_sound = {""}
+
+
+	Playlist_Manager( PC_Ambient, t_ambient_sound, true, true , {2, 4})
+	
+	
+end

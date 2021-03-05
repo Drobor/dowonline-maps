@@ -1,0 +1,4 @@
+function Rule_SetupMusicPlaylist()
+t_ambient = {"Rain_thunder_amb" }		
+Playlist_Manager( PC_Ambient, t_ambient, true , true , {5, 10})
+end
