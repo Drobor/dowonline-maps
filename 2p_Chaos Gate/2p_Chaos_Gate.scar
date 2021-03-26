@@ -1,0 +1,40 @@
+-------------------------------------------------
+--[[CREDITS]]
+-------------------------------------------------
+-- Music set-up by s1_ONE
+
+-------------------------------------------------
+--[[ IMPORTS ]]
+-------------------------------------------------
+import("scarUtil.scar")
+import("WXPScarUtil.scar")
+
+-------------------------------------------------
+--[[ON GAME SETUP]]
+-------------------------------------------------
+
+-------------------------------------------------
+--[[ ON INITIALIZATION ]]
+-------------------------------------------------
+function OnInit()
+	
+	Rule_SetupMusicPlaylist()
+
+end
+
+--[[ the Scar_AddInit(OnInit) function is mandatory! This registers your init function with scar. ]]
+Scar_AddInit(OnInit)
+
+-------------------------------------------------
+--[[ MUSIC ]]
+-------------------------------------------------
+
+function Rule_SetupMusicPlaylist()
+    t_music = {"mu_ig_rac_necron_perc", "MU_IG_STR_Chaos_perc_str", "MU_IG_STR_ImpGd_perc_voice", "MU_IG_STR_SpaceMarine", "mu_ig_str_spacemarine_perc_str", "MU_IG_STR_SpaceMarine_perc_brass", "music_necron_theme_perc", "MU_IG_STR_ImpGd", "mu_ig_rac_tau_perc", "mu_ig_rac_tau_perc_brass", "music_necron_theme_perc"}
+    
+    Playlist_Manager( PC_Music, t_music, true, true , {10, 10})
+    
+    t_ambient = {"snowy_wind_1", "snowy_wind_2"}
+    Playlist_Manager( PC_Ambient, t_ambient, true, true , {5, 10})
+    
+end
