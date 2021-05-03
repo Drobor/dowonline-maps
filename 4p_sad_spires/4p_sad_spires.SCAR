@@ -1,0 +1,130 @@
+--Tunnels Tutorial, SCAR code by Fuggles
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+
+
+function OnInit()
+
+t_Players= {}
+
+
+
+--this value divided by 8 is the number of seconds that the unit is in the tunnel
+g_TunnelDelay = 32
+
+
+
+--you need an exit count, an entry count and a queue for each tunnel
+
+
+EQ1 = 0
+EX1 = 0
+EQ2 = 0
+EX2 = 0
+EQ3 = 0
+EX3 = 0
+EQ4 = 0
+EX4 = 0
+
+TunnelQueue = { }
+TunnelCount = 1
+TunnelExit = {}
+TunnelNumber = 0
+t_tunnelcount2 = {0}
+t_tunnelcount3 = {0}
+t_tunnelcount4 = {0}
+t_tunnelexit1 = {0}
+t_tunnelexit2 = {0}
+t_tunnelexit3 = {0}
+t_tunnelexit4 = {0}
+Rule_AddOneShot(players,0)
+end
+
+Scar_AddInit(OnInit)
+
+
+
+
+
+
+--I'm running this once at the start to get it out of the way and let me at the juicy goodness
+function players()
+
+
+local count = World_GetPlayerCount()
+	for i = 0, count - 1 do
+	j = i + 1
+		t_Players[j]= World_GetPlayerAt(i)
+		end
+
+Rule_AddInterval(tunnels,2)
+end
+
+
+
+
+
+
+
+--[ORIGINAL TELEPORT SCRIPT BY RUOSTEINEN]--
+--This checks for any player near the tunnel in marker, then picks them up and logs them for 4 seconds before popping them onto the exit marker
+
+
+--you can see 2 lines below a for loop going from 1, 4. Change 4 to the number of tunnels needed. If you go higher than for, you will need to ammend the 'if' command below.
+
+function tunnels()
+
+
+
+for j = 1, 4 do
+
+
+
+		
+	
+		local playerCount = World_GetPlayerCount()
+		for w = 1, playerCount do
+
+
+	local playerCount = World_GetPlayerCount()
+			if Player_AreSquadsNearMarker( t_Players[w], "tunnel"..j ) then
+			TunnelNumber = TunnelNumber + 1
+			TunnelExit[TunnelNumber] = "Out"..j
+				-- get the squads and despawn them
+				SGroup_Clear(SGroup_CreateIfNotFound("sg_tunnel"..TunnelNumber))
+				Player_GetAllSquadsNearMarker( t_Players[w], "sg_tunnel"..TunnelNumber, "tunnel"..j )
+				SGroup_DeSpawn( "sg_tunnel"..TunnelNumber)
+					
+				table.insert(TunnelQueue,0)
+				
+			
+			end
+		end
+		
+
+	
+
+	local numQueuing = table.getn(TunnelQueue)
+	if numQueuing > 0 then
+		-- loop through table, increasing all values by 1
+		for n = 1, numQueuing do
+			TunnelQueue[n] = TunnelQueue[n] + 1
+		
+		end
+		
+		-- spawns the next squad if it's been in long enough
+		if TunnelQueue[1] >= g_TunnelDelay then
+					
+				SGroup_ReSpawnMarker( "sg_tunnel"..TunnelCount, TunnelExit[TunnelCount] )
+				TunnelCount = TunnelCount +1
+				table.remove(TunnelQueue, 1)
+
+		end
+	end
+
+end	
+end
+
+
